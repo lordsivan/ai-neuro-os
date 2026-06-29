@@ -142,77 +142,82 @@ components should be treated as a worked example of the contracts — replaceabl
 
 ---
 
-## ADR-0003 — Phase 1: a requirements-visualization platform (mobile-first); Phase 2: the clinical app
+## ADR-0003 — Phase 1: a functional end-user app prototype, built for BA understanding; Phase 2: clinical rollout
 
 **Status:** accepted (planned next deliverable) · **Scope:** the first runnable artifact and its purpose
 
 ### Decision — two phases, deliberately different purposes
 
-- **Phase 1 — Requirements-visualization platform (this deliverable).** A runnable
-  **mobile-first** application whose **primary audience is business analysts** (and other
-  internal stakeholders), whose **purpose is to make the surface and the requirements —
-  already embedded across the several-thousand-page design corpus — legible, navigable, and
-  concrete.** It is a way to *see and understand what has been specified*, using the worked
-  case + mock/realistic data as the vehicle. **It is not a clinical product, not a clinician
-  tool, and not a capability demo.** Think: an interactive, walkable rendering of the specs.
-- **Phase 2 — Clinical/rollout application (later).** The full web and/or mobile app built
-  for clinical use and deployment. Out of scope for Phase 1.
+- **Phase 1 — Functional prototype of the *actual end-user application* (this deliverable).**
+  A runnable, **mobile-first** app that is **the real product experience** — the
+  clinician-facing Console (C7) journeys: ask / navigate the cross-modal lesion view /
+  see findings, diagnosis, plan, progression / discovery / confirm a candidate / get
+  notified — running on **mock + realistic data**. It is **NOT a document navigator, a
+  requirements/metrics dashboard, or a spec-visualization tool.** It is the end-user app
+  itself. Its **audience and purpose in Phase 1 are the business analyst**: BAs (and
+  stakeholders) come to **understand the product surface and the requirements — which live
+  across the several-thousand-page spec corpus — by *using the real application*,** not by
+  reading documents. The app *is* the requirements made tangible.
+- **Phase 2 — Clinical/rollout application (later).** The same app hardened for clinical
+  use and deployment (real components, validation, regulatory, integration). Out of scope
+  for Phase 1.
 
 ### Phase-1 shape
 
+- **Same UX as the eventual product:** the genuine Console end-user journeys and screens,
+  not a meta/annotation layer over them.
 - **Mock + realistic data:** high-quality hand-crafted mock data, optionally supplemented by
-  **realistic public data** (open datasets) for visual fidelity — purely to make the
-  requirements tangible.
-- **Mock components behind the real contracts:** components/MCP capabilities are
-  **stubs/mocks that conform to the specified roles + interfaces**, so building the
-  visualizer doubles as a **conformance test of the inter-component contracts** (ADR-0002)
-  and surfaces under-specified seams as feedback into the specs.
-- **UI: mobile-first**, scoped to the Console (C7) ask / navigate / explain / confirm /
-  notify surface and to *traversing the requirements* (component map → component → layer →
-  worked-case step). Not diagnostic image reading.
+  **realistic public data** (open datasets) for visual fidelity.
+- **Mock cognition behind the real contracts:** the AI/clinical results are mocked, but each
+  component/MCP capability is a **stub conforming to its specified role + interface** — so
+  building the app doubles as a **conformance test of the inter-component contracts**
+  (ADR-0002) and feeds under-specified seams back into the specs.
+- **UI: mobile-first**, scoped to the Console interaction surface (ask / navigate / explain /
+  confirm / notify). Not diagnostic image reading.
 - **UI roadmap (beyond Phase 1):** mobile-first → web → **chat-based / agentic**; the
   interaction surface evolves, the architecture beneath does not.
 
 ### Why (the rationale)
 
-- **The spec corpus is large and hard to hold in the head.** Thousands of pages across 8
-  components × 6 layers × samples is exactly the kind of thing a BA needs to *walk*, not
-  read linearly. A visualizer turns the documents into a navigable surface so requirements
-  and scope can actually be understood and signed off.
-- **It makes the architecture's seams concrete cheaply.** Wiring mock components through the
-  real contracts proves the contracts are complete *and* gives the BA a faithful surface —
-  one artifact, two payoffs.
-- **Mobile-first fits a BA review tool** (browse, drill in, annotate, walk a scenario) far
-  better than it would fit clinical image reading.
+- **A working app communicates requirements better than a corpus.** BAs grasp scope, gaps,
+  and intent by *operating the real surface* far faster and more reliably than by reading
+  thousands of pages — and experiencing the product elicits/validates requirements that
+  prose review misses. The app is a requirements **elicitation and validation** vehicle in
+  the form of the genuine product.
+- **It makes the architecture's seams concrete cheaply.** Mock components through the real
+  contracts gives BAs a faithful product *and* proves the contracts are buildable — one
+  artifact, two payoffs.
+- **Mobile-first fits the Console interaction surface** (ask/navigate/confirm/notify); the
+  heavyweight image reading is delegated, not reimplemented.
 
 ### Consequences
 
-- **Traceability is the core property.** Every screen/element should **cite the doc /
-  requirement it visualizes** (component, layer, sample ID), so the visualizer stays a *view
-  of* the specs — not a second, drifting source of truth.
+- **Fidelity to the specified product is the core property:** the prototype must faithfully
+  realize the Console journeys and the worked case, so what a BA experiences *is* the
+  specified surface.
 - Reuse the existing worked-case IDs (`pat-001`, `les-001`, `dx-001`, `tx-001`,
-  `prog-001/002`, cohort `pat-417/512`) so docs and visualizer stay aligned.
+  `prog-001/002`, cohort `pat-417/512`) so app and docs stay aligned.
 - Building it will expose gaps/ambiguities in the specs; those flow **back into the docs**.
-- Any public data carries **dataset provenance** ("public dataset, not a real patient") and
+- Public data carries **dataset provenance** ("public dataset, not a real patient") and
   respects licenses.
 
 ### What this ADR does **not** settle (honest limits)
 
-- **Visualizing requirements ≠ validating them.** The Phase-1 app faithfully renders
-  *whatever the docs say* — including the unvalidated and the AI-authored. It makes the specs
-  **legible, not correct.** It is a comprehension/sign-off tool, not evidence the design or
-  any capability works. (This framing *removes* the earlier "mistaken for a clinical product"
-  risk — Phase 1 is explicitly a BA requirements tool — but it must still be labeled as a
-  **spec visualization over mock data**, not a demo of working AI.)
-- **Drift risk.** Without strict doc-to-view traceability, the visualizer can quietly become
-  the spec. Traceability (above) is the mitigation.
-- **Phase 2 is a different product with different bar.** Clinical rollout brings the
-  regulatory, validation, integration, and safety obligations that Phase 1 deliberately
-  sets aside; nothing in Phase 1 discharges them.
+- **It is the real app experience, so it *will* look like a working clinical product —
+  while the cognition is mock.** That persuasiveness is the point (for BA understanding) and
+  the risk (false confidence). Mitigation: keep it **internal / BA-facing** and **clearly
+  labeled mock-data, not clinically validated**; it is a requirements vehicle, not evidence
+  the AI works.
+- **Phase 1 validates the *surface*, not the *capability*.** Experiencing the journeys
+  confirms what the product should do; it does not confirm any model is accurate. Real
+  components, validation, and regulatory work are Phase 2 and are not discharged here.
+- **Realistic public data ≠ validation;** it raises visual fidelity only, and real images
+  paired with mock findings must be marked as such.
 
 ### Implication for reviewers
 
-Judge the Phase-1 app on **fidelity and traceability to the specs** (can a BA understand the
-real surface/requirements, and does every view map back to a document?), and on whether
-building it **exercised the inter-component contracts** (conformance signal). Do **not**
-read it as a clinical demo or as evidence the capabilities work — by design it is neither.
+Judge the Phase-1 app as a **functional prototype of the end-user product used for BA
+requirement understanding**: does operating it convey the real surface and requirements,
+does it faithfully realize the specified Console journeys + worked case, and did building it
+**exercise the inter-component contracts** (conformance signal)? It is the genuine app on
+mock cognition — **not** a clinical demo and **not** evidence the capabilities work.
