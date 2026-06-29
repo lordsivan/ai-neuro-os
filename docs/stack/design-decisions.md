@@ -4,10 +4,12 @@ Architecture Decision Records: the *why* behind the stack's load-bearing choices
 Each records the decision, the reasoning, the consequences, and what it does **not**
 settle — so the rationale survives even when the prose elsewhere only states the *what*.
 
-> **Scope:** this branch is **architecture & design only**. These ADRs cover *architecture*
-> rationale. Implementation/delivery planning (the Phase-1 mobile app, phasing, UI roadmap)
-> is intentionally **kept separate** in `docs/roadmap/implementation-phases.md` so it does
-> not distract from the design.
+> **Scope:** this repository (`ai-neuro-os`) is the **design / architecture source of
+> truth** — architecture & design only. The **implementation lives in a separate repo**
+> (`ai-neuro-os-app`); the two are coupled only by a versioned contract, never by a git merge
+> (ADR-0003, ADR-0004). Implementation/delivery planning (the Phase-1 mobile app, phasing, UI
+> roadmap) is kept in `docs/roadmap/implementation-phases.md` so it does not distract from the
+> design.
 
 > **Two meanings of "layer" — do not conflate.**
 > - **Domain layers (L1–L6):** the stack *inside each component* (Capability → Adapters →
@@ -172,10 +174,15 @@ layering-respecting replica of the design it pins.
 
 ### How it works
 
-1. **Topology — version the seam, don't merge.** Design publishes a **semver-tagged
-   `contracts` artifact**; the implementation pins `contracts@X.Y.Z`. The link is a version
-   pin, not a git merge. (Two repos preferred; if branches, make the impl branch orphan and
-   consume a tagged export.)
+1. **Topology — two repos, version the seam, don't merge.** **Decided: two repositories.**
+   - `ai-neuro-os` (this repo) — **design source of truth**; owns the architecture, the
+     component specs, and the **`contracts/`** artifact, which it **semver-tags** on release.
+   - `ai-neuro-os-app` — the **implementation** (Phase-1 mobile app, then beyond).
+   The implementation **pins** a contract version (a published package
+   `@ai-neuro-os/contracts@X.Y.Z`, or a git submodule pinned to a release tag as the
+   low-infra fallback). The only coupling is that **version pin** — there is **no git merge**
+   between the repos, and the impl repo never writes back into the design repo (change flows
+   as issues/PRs against the design — rule 6).
 2. **Formalize the seams (this is what makes "100% replica" checkable).** Extract from the
    design, into the design branch, machine-checkable contracts: each component's **L6 public
    API** (OpenAPI/JSON-Schema/protobuf/types), the **domain model** (entities, edges,
@@ -241,12 +248,12 @@ at lifecycle scale.
 
 ### The stack
 
-| # | SDLC layer | Artifact (where) | Conforms **up** to | Verified **down** by | Branch |
+| # | SDLC layer | Artifact (where) | Conforms **up** to | Verified **down** by | Repo |
 |---|---|---|---|---|---|
-| 1 | **Architecture** | invariants, roles, ADRs, contracts (`docs/stack/`) | — (top) | design review / traceability | design |
-| 2 | **Design** | component L1–L6 specs, domain model, interface specs, samples (`docs/components/`, `samples/`) | Architecture | impl conformance gates | design |
-| 3 | **Implementation** | prototype code (module-per-component, internally L1–L6) | Design (a **pinned** contract version) | Test | impl |
-| 4 | **Test** | conformance + worked-case parity + unit/integration | Design & Architecture | CI green | impl |
+| 1 | **Architecture** | invariants, roles, ADRs, contracts (`docs/stack/`, `contracts/`) | — (top) | design review / traceability | `ai-neuro-os` |
+| 2 | **Design** | component L1–L6 specs, domain model, interface specs, samples (`docs/components/`, `samples/`) | Architecture | impl conformance gates | `ai-neuro-os` |
+| 3 | **Implementation** | prototype code (module-per-component, internally L1–L6) | Design (a **pinned** contract version) | Test | `ai-neuro-os-app` |
+| 4 | **Test** | conformance + worked-case parity + unit/integration | Design & Architecture | CI green | `ai-neuro-os-app` |
 
 ### Rules
 
@@ -263,9 +270,11 @@ at lifecycle scale.
    traceability. **Design→Implementation = the four CI gates of ADR-0003** (contract,
    layering, invariant, worked-case parity). Implementation→Test = tests must cover the
    pinned contract.
-5. **Branch mapping.** The **design branch** carries layers 1–2; the **impl branch** carries
-   layers 3–4; the **seam between branches is the versioned contract** — i.e. exactly the
-   Design↔Implementation boundary (mechanism in ADR-0003).
+5. **Repo mapping (two repos).** The **`ai-neuro-os` repo** carries layers 1–2
+   (Architecture + Design + the `contracts/` artifact); the **`ai-neuro-os-app` repo**
+   carries layers 3–4 (Implementation + Test). The **seam between the repos is the versioned
+   contract** — exactly the Design↔Implementation boundary (mechanism in ADR-0003). No git
+   merge crosses the repo boundary; the impl repo consumes a **pinned** contract version.
 
 ### Where the two requirements land
 

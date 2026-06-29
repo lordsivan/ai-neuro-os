@@ -7,6 +7,12 @@
 > place for downstream plans so they don't distract from the architecture work.
 >
 > Architecture rationale lives in `docs/stack/design-decisions.md` (ADR-0001, ADR-0002).
+>
+> **The implementation has its own repo:** `ai-neuro-os-app` (this `ai-neuro-os` repo is the
+> design source of truth). The app repo **pins a versioned contract** published from here and
+> proves conformance in CI — see ADR-0003 (the seam) and ADR-0004 (the lifecycle layering /
+> repo mapping). The notes below describe *what* Phase 1 builds; *how* it must conform lives
+> in those ADRs.
 
 ## Phase 1 — Functional prototype of the end-user app, built for BA understanding
 
