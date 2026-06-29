@@ -1,0 +1,46 @@
+{
+  "_comment": "ILLUSTRATIVE sample of Recall (C3) serving discovery. Not runnable, not real patients. Ties to samples/connectome/patient-example.json (discoveryExample) and the find-mri-001 produced by Perception. Recall returns candidates only; callers decide meaning.",
+
+  "embedOnIngest": {
+    "call": "Recall.embed(sourceRef=find-mri-001, kind=finding)",
+    "embedding": {
+      "id": "emb-find-mri-001",
+      "sourceRef": "find-mri-001",
+      "granularity": "finding",
+      "space": { "id": "mri-img-v1", "model": "img-embed", "modelVersion": "v1", "modality": "MRI", "dim": 768, "metric": "cosine", "status": "active" },
+      "vectorRef": "vec://mri/find-mri-001",
+      "namespace": "mri-img-v1/finding/cohort",
+      "asserted_by": "embedding",
+      "timestamp": "2026-01-02"
+    },
+    "returnedToConnectome": { "vectorRef": "vec://mri/find-mri-001", "space": "mri-img-v1" }
+  },
+
+  "queryF_similarFindings": {
+    "call": "Recall.discoverSimilar(anchor=find-mri-001, k=3, filters={scope: cohort})",
+    "space": "mri-img-v1",
+    "scope": "cohort",
+    "results": [
+      { "sourceRef": "find-mri-cohort-417", "patientId": "pat-417", "modality": "MRI", "granularity": "finding", "distance": 0.06, "similarity": 0.94, "space": "mri-img-v1", "scope": "cohort", "status": "candidate", "asserted_by": "embedding" },
+      { "sourceRef": "find-mri-cohort-088", "patientId": "pat-088", "modality": "MRI", "granularity": "finding", "distance": 0.09, "similarity": 0.91, "space": "mri-img-v1", "scope": "cohort", "status": "candidate", "asserted_by": "embedding" },
+      { "sourceRef": "find-ct-cohort-203", "patientId": "pat-203", "modality": "CT", "granularity": "finding", "distance": 0.12, "similarity": 0.88, "space": "xmodal-v1", "scope": "cohort", "status": "candidate", "asserted_by": "embedding", "_note": "cross-modal match via shared/aligned space" }
+    ],
+    "_handoff": "Connectome correlation (mechanism 5) decides if any becomes a confirmed corresponds_to. Recall only proposes."
+  },
+
+  "queryG_similarCases": {
+    "call": "Recall.discoverSimilarCases(patientId=pat-001, k=2, filters={scope: cohort, time: prior})",
+    "space": "case-v1",
+    "scope": "cohort",
+    "results": [
+      { "sourceRef": "case-pat-417", "patientId": "pat-417", "granularity": "case", "similarity": 0.92, "status": "candidate", "asserted_by": "embedding", "recordedDiagnosis": "high-grade glioma", "recordedOutcome": "progression at 4 months" },
+      { "sourceRef": "case-pat-512", "patientId": "pat-512", "granularity": "case", "similarity": 0.86, "status": "candidate", "asserted_by": "embedding", "recordedDiagnosis": "tumefactive demyelination", "recordedOutcome": "steroid-responsive", "_note": "look-alike DIFFERENT diagnosis — the value of discovery: surfaces the alternative to rule out" }
+    ],
+    "_handoff": "Reasoner (C4) weighs these as precedent. Recall does not diagnose."
+  },
+
+  "governance": {
+    "scopeAuthority": "cohort retrieval authorized & audited by Sentinel (C8)",
+    "spaceVersioning": "all results carry their VectorSpace; model change → new space + backfill (see 08-granularity-and-spaces.md)"
+  }
+}

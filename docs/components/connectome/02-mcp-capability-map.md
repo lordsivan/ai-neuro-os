@@ -55,8 +55,12 @@ become comparable. This is what lets "shared anatomical location" (mechanism 2) 
 ### Embedding & vector-search — the discovery substrate
 Produces **multimodal embeddings**: image embeddings for MRI/CT/US/histology and text
 embeddings for reports & patient history. Runs approximate-nearest-neighbor search over
-them. (In the wider stack the index lifecycle is owned by the future **C3 Index**
-component.) Backs the **discovery role** below.
+them. Backs the **discovery role** below.
+
+> **Fronted by Recall (C3).** In the reconciled stack, Connectome does **not** call these
+> embedding/vector-search servers directly — it calls **Recall**, which owns the embedding
+> + vector-index lifecycle and exposes `embed` / `discoverSimilar` / `search`. This row
+> describes the underlying capability; Recall is the front door. See `docs/components/recall/`.
 
 ### Retrieval / search
 Hybrid lexical + vector search for free-text journeys ("find prior cases mentioning

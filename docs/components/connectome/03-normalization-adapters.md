@@ -71,9 +71,15 @@ segmentation result  ──FindingAdapter──▶  Finding
 
 ```
 embedding vector  ──EmbeddingAdapter──▶  finding.embedding = {model, dim, vectorRef}
-                                          (vectorRef points into the L1 vector index;
+                                          (vectorRef points into Recall's vector index;
                                            the raw vector is NOT stored in the graph)
 ```
+
+> **Reconciled with Recall (C3).** The `EmbeddingAdapter` does **not** call the embedding
+> MCP server directly — it delegates to **Recall** (`Recall.embed(sourceRef)`), the single
+> vector-memory service, and stores the `vectorRef` Recall returns. Likewise, the discovery
+> in `06` (mechanism 5) and journeys F/G/H in `07` call **Recall's** discovery API, not the
+> raw MCP server. See `docs/components/recall/`.
 
 ## The adapter boundary contract
 
