@@ -9,6 +9,16 @@ settle — so the rationale survives even when the prose elsewhere only states t
 > is intentionally **kept separate** in `docs/roadmap/implementation-phases.md` so it does
 > not distract from the design.
 
+> **Two meanings of "layer" — do not conflate.**
+> - **Domain layers (L1–L6):** the stack *inside each component* (Capability → Adapters →
+>   Domain Model → Aggregate → Correlation/L5 → Navigation/L6). See any component's `01`.
+> - **Software-lifecycle (SDLC) layers:** the stack of *work products* — **Architecture →
+>   Design → Implementation → Test** — where each conforms to the one above. Governed by
+>   **ADR-0004**.
+> Both obey the same "each layer depends only on / conforms only to the layer above it"
+> discipline, but at different scales. When this repo says "the layering rule," context
+> says which.
+
 ---
 
 ## ADR-0001 — Heavyweight capabilities live behind MCP boundaries
@@ -212,6 +222,65 @@ layering-respecting replica of the design it pins.
 - **Conformance ≠ correctness.** Passing the four gates proves the impl matches the *design*;
   it does not prove the design (or any model) is clinically correct — that is validation,
   separate and downstream.
+
+---
+
+## ADR-0004 — Software-lifecycle layering: Architecture → Design → Implementation → Test
+
+**Status:** accepted · **Scope:** how the work products (artifacts) relate across the SDLC
+**Note:** this is the **SDLC/artifact** layering, **distinct from the domain L1–L6 layering**
+inside a component (see the disambiguation at the top).
+
+### Decision
+
+Govern the work products as a **strict vertical stack of lifecycle layers — Architecture,
+Design, Implementation, Test** — where **each layer derives from and conforms to the layer
+above it**, may **evolve on its own version**, and feeds change **upward as requests** (never
+silent divergence). The same dependency discipline as the domain L(n)→L(n−1) rule, applied
+at lifecycle scale.
+
+### The stack
+
+| # | SDLC layer | Artifact (where) | Conforms **up** to | Verified **down** by | Branch |
+|---|---|---|---|---|---|
+| 1 | **Architecture** | invariants, roles, ADRs, contracts (`docs/stack/`) | — (top) | design review / traceability | design |
+| 2 | **Design** | component L1–L6 specs, domain model, interface specs, samples (`docs/components/`, `samples/`) | Architecture | impl conformance gates | design |
+| 3 | **Implementation** | prototype code (module-per-component, internally L1–L6) | Design (a **pinned** contract version) | Test | impl |
+| 4 | **Test** | conformance + worked-case parity + unit/integration | Design & Architecture | CI green | impl |
+
+### Rules
+
+1. **Downward derivation, upward feedback.** Nothing appears in a lower layer that isn't
+   justified by the layer above. Lower-layer discoveries become **change requests** to the
+   layer above — never local edits that diverge.
+2. **No skipping.** Implementation conforms to **Design**; Design conforms to
+   **Architecture**. You don't justify code straight from "architecture intent," bypassing
+   Design.
+3. **Per-layer versioning + pinning.** Architecture `vA`; Design `vD` (conforms to `vA`);
+   Implementation **pins** `vD`; Test targets `vD`. Each layer revs on its own clock;
+   propagation is top-down and deliberate.
+4. **Conformance gate between every adjacent pair.** Architecture→Design = review /
+   traceability. **Design→Implementation = the four CI gates of ADR-0003** (contract,
+   layering, invariant, worked-case parity). Implementation→Test = tests must cover the
+   pinned contract.
+5. **Branch mapping.** The **design branch** carries layers 1–2; the **impl branch** carries
+   layers 3–4; the **seam between branches is the versioned contract** — i.e. exactly the
+   Design↔Implementation boundary (mechanism in ADR-0003).
+
+### Where the two requirements land
+
+- **"100% replica, doesn't violate the design"** = the **Design→Implementation gate is
+  green** for the pinned contract version.
+- **"Architecture evolves independently of implementation"** = **per-layer versioning**;
+  Implementation only sees a new Design when it chooses to **bump its pin**, then re-runs the
+  gates.
+
+### What this ADR does **not** settle
+
+- It requires the **contracts artifact** (ADR-0003) to exist; the Architecture↔Design and
+  Design↔Implementation gates are only as strong as the formalized contracts.
+- **Cross-layer conformance proves fidelity, not clinical correctness.** Validation
+  (is the design *right*?) sits **beside** the Test layer as a separate concern, not above it.
 
 ---
 
