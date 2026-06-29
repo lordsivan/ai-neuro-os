@@ -23,7 +23,7 @@ grouped into planes that build outward from Connectome.
 | # | Component | Plane | Role | Builds on | Status |
 |---|-----------|-------|------|-----------|--------|
 | **C1** | **Connectome** | foundation | Cross-modal knowledge graph: ingest→normalize multimodal neuro data, correlate findings across modalities, embedding-backed **discovery**, **navigation** (diagnosis / treatment / progression). The center. | MCP servers (L1) | **Specified** — `docs/components/connectome/` |
-| C2 | **Perception** | data / sensory | Orchestrates imaging-AI MCP servers (segmentation / detection / characterization / measurement) → structured **Findings** that feed Connectome. | C1 schema, imaging MCP | to brainstorm |
+| C2 | **Perception** | data / sensory | Orchestrates imaging-AI + report-NLP MCP servers (segmentation / detection / characterization / measurement / report-NLP) → fuses them into structured **Findings** that feed Connectome (produces; Connectome persists). | C1 schema, imaging MCP | **Specified** — `docs/components/perception/` |
 | C3 | **Recall** | data / sensory | Owns the embedding + vector-index lifecycle; the discovery substrate Connectome queries. Cohort / similar-case retrieval folded in here. | C1, embedding MCP | to brainstorm |
 | C4 | **Reasoner** | cognition | Diagnostic reasoning: differential generation, criteria application (McDonald / RANO / WHO CNS), evidence surfacing over the graph. | C1, C3 | to brainstorm |
 | C5 | **Pathways** | cognition | Treatment planning + guideline/trial matching + longitudinal monitoring & response assessment. | C1, C4 | to brainstorm |

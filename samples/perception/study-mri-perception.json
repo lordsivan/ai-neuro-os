@@ -1,0 +1,107 @@
+{
+  "_comment": "ILLUSTRATIVE sample of Perception (C2) producing one MRI Finding from many detections + a report, then handing it to Connectome. Not runnable, not a real patient. Ties to samples/connectome/patient-example.json (produces find-mri-001 for study-mri-001).",
+
+  "detectionTask": {
+    "id": "task-mri-001",
+    "studyId": "study-mri-001",
+    "modality": "MRI",
+    "targetSeries": ["ser-mri-flair", "ser-mri-t1c", "ser-mri-dwi"],
+    "requested": ["segmentation", "characterization", "measurement", "report-nlp", "qc", "registration"],
+    "status": "completed"
+  },
+
+  "modelRuns": [
+    { "id": "run-flair-seg", "server": "segmentation", "model": "neuroseg", "modelVersion": "2.3", "inputRef": "ser-mri-flair", "qc": "pass", "status": "ok" },
+    { "id": "run-t1c-enh", "server": "characterization", "model": "enh-detect", "modelVersion": "1.4", "inputRef": "ser-mri-t1c", "qc": "pass", "status": "ok" },
+    { "id": "run-dwi-restrict", "server": "characterization", "model": "dwi-cls", "modelVersion": "1.1", "inputRef": "ser-mri-dwi", "qc": "pass", "status": "ok" },
+    { "id": "run-measure", "server": "measurement", "model": "voltool", "modelVersion": "3.0", "inputRef": "ser-mri-flair", "qc": "pass", "status": "ok" },
+    { "id": "run-report", "server": "report-nlp", "model": "radnlp", "modelVersion": "2.0", "inputRef": "report-mri-001", "qc": "pass", "status": "ok" }
+  ],
+
+  "detections": [
+    {
+      "id": "det-flair", "modelRunId": "run-flair-seg", "source": "image",
+      "kind": "FLAIR-hyperintense lesion",
+      "attributes": { "flair": "hyperintense", "edema": "moderate" },
+      "score": 0.90, "region": { "seriesId": "ser-mri-flair", "mask": "rle:…" },
+      "negated": false, "laterality": "left",
+      "asserted_by": "algorithm", "timestamp": "2026-01-02"
+    },
+    {
+      "id": "det-t1c", "modelRunId": "run-t1c-enh", "source": "image",
+      "kind": "ring-enhancing mass",
+      "attributes": { "enhancement": "ring" },
+      "score": 0.92, "region": { "seriesId": "ser-mri-t1c", "mask": "rle:…" },
+      "negated": false, "laterality": "left",
+      "asserted_by": "algorithm", "timestamp": "2026-01-02"
+    },
+    {
+      "id": "det-dwi", "modelRunId": "run-dwi-restrict", "source": "image",
+      "kind": "rim diffusion restriction",
+      "attributes": { "diffusionRestriction": "rim" },
+      "score": 0.81, "region": { "seriesId": "ser-mri-dwi", "mask": "rle:…" },
+      "negated": false, "laterality": "left",
+      "asserted_by": "algorithm", "timestamp": "2026-01-02"
+    },
+    {
+      "id": "det-report", "modelRunId": "run-report", "source": "report",
+      "kind": "ring-enhancing mass",
+      "attributes": { "enhancement": "ring", "edema": "present" },
+      "score": null, "region": { "reportSpan": "Ring-enhancing mass in the left frontal lobe..." },
+      "negated": false, "laterality": "left", "anatomy": "frontal lobe",
+      "asserted_by": "human", "timestamp": "2026-01-02"
+    },
+    {
+      "id": "det-report-neg", "modelRunId": "run-report", "source": "report",
+      "kind": "hemorrhage",
+      "negated": true, "region": { "reportSpan": "...no hemorrhage." },
+      "asserted_by": "human", "timestamp": "2026-01-02",
+      "_note": "Negated → recorded as absent, not emitted as a finding."
+    }
+  ],
+
+  "measurements": [
+    { "id": "meas-vol", "modelRunId": "run-measure", "type": "volume", "value": 18.4, "unit": "ml", "region": "ser-mri-flair" },
+    { "id": "meas-diam", "modelRunId": "run-measure", "type": "diameter", "value": 33, "unit": "mm", "region": "ser-mri-flair" }
+  ],
+
+  "candidateFinding": {
+    "id": "cand-001",
+    "memberDetections": ["det-flair", "det-t1c", "det-dwi", "det-report"],
+    "memberMeasurements": ["meas-vol", "meas-diam"],
+    "region": "left frontal (fused)",
+    "locatedHint": { "atlasRegion": "Frontal lobe", "laterality": "left", "space": "MNI", "coords": [-32, 24, 28] },
+    "prelimConfidence": 0.88,
+    "flags": [],
+    "_note": "Three sequence views + matching report sentence fused into one finding."
+  },
+
+  "producedFinding": {
+    "id": "find-mri-001",
+    "modality": "MRI",
+    "seriesId": "ser-mri-t1c",
+    "kind": "ring-enhancing mass",
+    "attributes": { "flair": "hyperintense", "enhancement": "ring", "diffusionRestriction": "rim", "edema": "moderate" },
+    "measurements": { "volume_ml": 18.4, "diameter_mm": 33 },
+    "locationId": "loc-lfront",
+    "embeddingRef": { "model": "img-embed-v1", "dim": 768, "vectorRef": "vec://mri/find-mri-001" },
+    "confidence": 0.91,
+    "status": "confirmed",
+    "asserted_by": "algorithm",
+    "method": "perception-fusion-v1",
+    "qc": "pass",
+    "timestamp": "2026-01-02",
+    "evidence": {
+      "detectionIds": ["det-flair", "det-t1c", "det-dwi", "det-report"],
+      "measurementIds": ["meas-vol", "meas-diam"],
+      "fusionMethod": "iou+atlas+report-link",
+      "agreement": "image(3 sequences) + report concur; no material conflict"
+    }
+  },
+
+  "handoff": {
+    "to": "connectome:FindingAdapter",
+    "action": "persist Finding",
+    "_note": "Perception produces; Connectome persists. Connectome's own L5 later links find-mri-001 manifestation_of les-001 (the left frontal Lesion), alongside CT/US/histology findings."
+  }
+}
