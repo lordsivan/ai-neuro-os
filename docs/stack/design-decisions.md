@@ -147,11 +147,80 @@ components should be treated as a worked example of the contracts — replaceabl
 
 ---
 
+## ADR-0003 — Design ⇄ implementation: separation, versioned contracts, conformance enforcement
+
+**Status:** accepted · **Scope:** how the design (this branch) and any implementation relate
+
+### Decision
+
+Design and implementation live in **separate branches/repos that never cross-merge**. The
+**design is the single source of truth**; an implementation **depends on a pinned, versioned
+contract** published from the design and **proves conformance in CI**. Change flows **one
+way — design → implementation**. The two evolve on independent cadences, coupled only by a
+**version number**, while the implementation is guaranteed to be a faithful,
+layering-respecting replica of the design it pins.
+
+### How it works
+
+1. **Topology — version the seam, don't merge.** Design publishes a **semver-tagged
+   `contracts` artifact**; the implementation pins `contracts@X.Y.Z`. The link is a version
+   pin, not a git merge. (Two repos preferred; if branches, make the impl branch orphan and
+   consume a tagged export.)
+2. **Formalize the seams (this is what makes "100% replica" checkable).** Extract from the
+   design, into the design branch, machine-checkable contracts: each component's **L6 public
+   API** (OpenAPI/JSON-Schema/protobuf/types), the **domain model** (entities, edges,
+   provenance attrs, `candidate/confirmed` enums), the **MCP capability** in/out, and the
+   **invariants** (single-writer, provenance-on-every-write, candidate-until-confirmed, the
+   L(n)→L(n−1) dependency rule). These *are* the design, formalized — and they close the
+   "seams are only prose" gap (ADR-0002).
+3. **Enforce layering by tooling, not discipline.** The implementation mirrors the
+   architecture structurally (one module per component, each split L1–L6); a
+   **boundary/dependency linter runs in CI and fails the build** on any violation (e.g.
+   `import-linter`, `dependency-cruiser`, `ArchUnit`, `depguard`). Rules: *L(n) imports only
+   L(n−1)*; *only L2 touches the MCP client*; *only Connectome writes the graph*;
+   *cross-component imports hit only the sibling's L6*.
+4. **Define "100% replica" as four CI gates** the implementation must pass to claim
+   *conformant to design vX.Y.Z*: **(a) contract conformance** (APIs validate against the
+   pinned schemas), **(b) layering conformance** (boundary linter green), **(c) invariant
+   conformance** (runtime assertions/tests), **(d) worked-case parity** (reproduces the
+   canonical `pat-001…` case end-to-end, output graph matches the design's `samples/` golden
+   file).
+5. **Independent evolution.** Design releases semver contract versions (patch = clarify,
+   minor = additive, major = breaking). The impl stays pinned and upgrades **deliberately**,
+   re-running the four gates. A scheduled **drift report** flags how many versions the impl
+   is behind — drift is surfaced, never silent.
+6. **One-way change flow.** The implementation never edits the design to fit code; it files a
+   **change request / proposed ADR** against the design, which re-publishes a new contract
+   version the impl then pins.
+7. **Traceability.** Each impl module back-references the design element it implements
+   (`implements: docs/components/<c>/<doc> @ contracts X.Y.Z`); **contract coverage =
+   replica completeness**, and is reportable.
+
+### Consequences
+
+- "Faithful replica" and "independent evolution" stop being in tension: the **version pin**
+  reconciles them — the impl is always a 100%-conformant replica of *the version it pins*,
+  and the design can move ahead freely.
+- It forces the design's seams to become **precise and testable** (the ADR-0002 critical
+  path) — because they are now the contract an implementation is checked against.
+
+### What this ADR does **not** settle
+
+- **The contracts must actually be authored.** Today the seams are prose; until the
+  `contracts` artifact exists and is versioned, conformance is aspirational. Producing it is
+  the prerequisite for any two-branch implementation work.
+- **Conformance ≠ correctness.** Passing the four gates proves the impl matches the *design*;
+  it does not prove the design (or any model) is clinically correct — that is validation,
+  separate and downstream.
+
+---
+
 ## Out of scope on this branch — implementation & delivery
 
 Delivery planning — the **Phase-1 mobile end-user-app prototype** (built for BA
 understanding), the **mobile → web → chat/agentic** UI roadmap, and **Phase-2 clinical
 rollout** — is intentionally **kept out of the design** and lives in
 **`docs/roadmap/implementation-phases.md`**. It is not part of the architecture
-specification and the design does not depend on it. This separation keeps the branch
-focused on architecting and design.
+specification and the design does not depend on it. ADR-0003 above governs *how* such an
+implementation must relate to (and conform to) this design; the implementation's own plans
+live in the roadmap.
