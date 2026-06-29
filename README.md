@@ -9,12 +9,12 @@
 This repository is currently in an **architecture & design phase**. It contains
 design specifications and illustrative sample data — **no application code yet**.
 
-> **Two-repo topology.** The **design / architecture source of truth** is the
-> **`ai-neuro-stack`** repo (owns the versioned `contracts/`). The **implementation** is the
-> **`ai-neuro-ba-app`** repo, which *pins* a contract version and proves conformance in CI —
-> coupled only by that version, never by a git merge. See `docs/stack/design-decisions.md`
-> (ADR-0003, ADR-0004). *(This content currently lives in the `ai-neuro-os` repo, pending
-> migration to `ai-neuro-stack` as the canonical home.)*
+> **Org + two-repo topology.** GitHub org **`ai-neuro-stack`** holds two repos: the
+> **design / architecture source of truth** repo **`ai-neuro-os`** (owns the versioned
+> `contracts/`) and the **implementation** repo **`ai-neuro-ba-app`** (pins a contract
+> version, proves conformance in CI). Coupled only by that version, never by a git merge.
+> See `docs/stack/design-decisions.md` (ADR-0003, ADR-0004). *(This content currently lives
+> in `lordsivan/ai-neuro-os` and moves under the org as `ai-neuro-stack/ai-neuro-os`.)*
 
 > **This is a reference *architecture*, not a fixed product.** The invariant is the set of
 > component **roles and the contracts between them**; the C1–C8 components below are **one
