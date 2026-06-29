@@ -1,0 +1,155 @@
+{
+  "_comment": "ILLUSTRATIVE sample of Console (C7): a clinician session on the running case. Not runnable, not a real patient. Ties to samples/connectome/patient-example.json (pat-001, les-001, find-mri-001/ct/us/histo-001, dx-001, tx-001, prog-001, prog-002), samples/reasoner/diagnosis-example.json (candidate dx-001 + biopsy next test) and samples/pathways/treatment-and-monitoring-example.json (tx-001, prog-001, prog-002). Console reads via siblings, composes/explains, and RELAYS the human confirmation; it never writes the graph.",
+
+  "session": {
+    "id": "sess-001",
+    "actor": "dr-clinician-01",
+    "subject": "les-001",
+    "trustProfile": "exploratory",
+    "startedAt": "2026-01-12"
+  },
+
+  "query": {
+    "id": "q-001",
+    "utterance": "what's going on with pat-001's left frontal lesion?",
+    "intent": "explain",
+    "subject": "les-001",
+    "scope": "lesion-dashboard",
+    "trustProfile": "exploratory",
+    "requests": [
+      { "to": "connectome", "journey": "A", "detail": "cross-modal findings of les-001", "via": "conductor" },
+      { "to": "connectome", "journey": "B", "detail": "history framing", "via": "conductor" },
+      { "to": "reasoner", "call": "explainDiagnosis", "detail": "differential for les-001", "via": "conductor" },
+      { "to": "pathways", "call": "read plan + timeline", "detail": "tx-001 + progression", "via": "conductor" },
+      { "to": "recall", "call": "discover_similar_cases", "detail": "similar treated cases", "via": "conductor" }
+    ]
+  },
+
+  "viewModel": {
+    "id": "vm-001",
+    "kind": "lesion-dashboard",
+    "trustProfile": "exploratory",
+    "anchor": "les-001",
+    "panels": [
+      {
+        "panel": "cross-modal-findings",
+        "source": "connectome:journeyA",
+        "items": [
+          { "ref": "find-mri-001", "modality": "MRI", "kind": "ring-enhancing mass", "status": "confirmed", "asserted_by": "human", "confidence": 0.97 },
+          { "ref": "find-ct-001", "modality": "CT", "kind": "focal hypodense lesion", "status": "confirmed", "asserted_by": "algorithm", "confidence": 0.84 },
+          { "ref": "find-us-001", "modality": "Ultrasound", "kind": "echogenic intra-axial lesion", "status": "confirmed", "asserted_by": "human", "confidence": 0.9 },
+          { "ref": "find-histo-001", "modality": "Histology", "kind": "high-grade glial neoplasm (grade 4)", "status": "confirmed", "asserted_by": "human", "confidence": 0.95 }
+        ]
+      },
+      {
+        "panel": "history",
+        "source": "connectome:journeyB",
+        "items": [
+          { "ref": "hist-001", "summary": "3 weeks progressive headaches + right-arm weakness", "status": "confirmed", "asserted_by": "human" }
+        ]
+      },
+      {
+        "panel": "differential",
+        "source": "reasoner",
+        "items": [
+          { "ref": "dx-001", "condition": "High-grade glioma", "rank": 1, "confidence": 0.62, "status": "candidate", "asserted_by": "algorithm", "supporting": ["find-mri-001", "find-ct-001", "case-pat-417"] },
+          { "ref": "di-demyel", "condition": "Tumefactive demyelination", "rank": 2, "confidence": 0.23, "status": "candidate", "asserted_by": "algorithm" },
+          { "ref": "di-abscess", "condition": "Cerebral abscess", "rank": 3, "confidence": 0.15, "status": "candidate", "asserted_by": "algorithm" }
+        ]
+      },
+      {
+        "panel": "next-test",
+        "source": "reasoner",
+        "items": [
+          { "ref": "dt-biopsy", "test": "biopsy / histology", "expectedInfoGain": "high", "status": "recommendation" }
+        ]
+      },
+      {
+        "panel": "plan",
+        "source": "pathways",
+        "items": [
+          { "ref": "tx-001", "intent": "curative", "components": ["maximal safe resection", "concurrent chemoradiation", "adjuvant chemotherapy"], "status": "candidate", "asserted_by": "algorithm", "confidence": 0.78 }
+        ]
+      },
+      {
+        "panel": "progression-timeline",
+        "source": "pathways",
+        "items": [
+          { "ref": "prog-001", "timepoint": "2026-02-01", "scheme": "RANO", "verdict": "stable", "status": "candidate", "asserted_by": "algorithm" },
+          { "ref": "prog-002", "timepoint": "2026-04-15", "scheme": "RANO", "verdict": "progression", "status": "candidate", "asserted_by": "algorithm" }
+        ],
+        "edges": [
+          { "type": "progresses_to", "from": "prog-001", "to": "prog-002", "interval": "73d" }
+        ]
+      },
+      {
+        "panel": "discovery",
+        "source": "recall",
+        "_note": "included only because trustProfile=exploratory",
+        "items": [
+          { "ref": "case-pat-417", "similarity": 0.92, "recordedDiagnosis": "high-grade glioma", "status": "discovered" }
+        ]
+      }
+    ],
+    "sources": ["connectome:journeyA", "connectome:journeyB", "reasoner", "pathways", "recall"]
+  },
+
+  "explanation": {
+    "id": "exp-001",
+    "target": "dx-001",
+    "text": "Leading candidate: high-grade glioma. Ring enhancement with rim diffusion restriction (find-mri-001) and mass effect (find-ct-001), concordant with precedent case-pat-417. WHO-CNS5 grade indeterminate pending tissue, so biopsy is the recommended next test.",
+    "evidenceRefs": ["find-mri-001", "find-ct-001", "case-pat-417", "WHO-CNS5", "dt-biopsy"],
+    "confidence": 0.62,
+    "asserted_by": "algorithm",
+    "method": "llm-grounded-on-evidence"
+  },
+
+  "confirmations": [
+    {
+      "id": "ca-001",
+      "actor": "dr-clinician-01",
+      "target": "dx-001",
+      "targetType": "diagnosis",
+      "decision": "confirm",
+      "owner": "reasoner+connectome",
+      "rationale": "Histology find-histo-001 returned grade 4; WHO-CNS5 now met.",
+      "timestamp": "2026-01-12",
+      "routes_to": { "action": "promote Diagnosis dx-001 to status=confirmed; find-histo-001 confirmed_by dx-001", "governed_by": "sentinel" }
+    },
+    {
+      "id": "ca-002",
+      "actor": "dr-clinician-01",
+      "target": "tx-001",
+      "targetType": "treatmentPlan",
+      "decision": "confirm",
+      "owner": "pathways+connectome",
+      "rationale": "Tumor board endorses resection -> chemoradiation -> adjuvant for confirmed grade-4 glioma.",
+      "timestamp": "2026-01-12",
+      "routes_to": { "action": "promote TreatmentPlan tx-001 to status=active, treated_by dx-001", "governed_by": "sentinel" }
+    }
+  ],
+
+  "reportDraft": {
+    "id": "rpt-001",
+    "subject": "pat-001",
+    "template": "lesion-case-report",
+    "status": "draft",
+    "generatedAt": "2026-01-12",
+    "sections": [
+      { "section": "header", "text": "pat-001, 52F. Left frontal mass (les-001).", "evidenceRefs": ["pat-001", "les-001"] },
+      { "section": "history", "text": "3 weeks progressive headaches and right-arm weakness; comorbidity hypertension.", "evidenceRefs": ["hist-001"] },
+      { "section": "imaging", "text": "MRI ring-enhancing mass with rim restriction; CT hypodense with mass effect; intra-op ultrasound echogenic lesion.", "evidenceRefs": ["find-mri-001", "find-ct-001", "find-us-001"] },
+      { "section": "pathology", "text": "High-grade glial neoplasm, WHO grade 4.", "evidenceRefs": ["find-histo-001"] },
+      { "section": "diagnosis", "text": "High-grade glioma (confirmed).", "evidenceRefs": ["dx-001"] },
+      { "section": "plan", "text": "Maximal safe resection, concurrent chemoradiation, adjuvant chemotherapy (active).", "evidenceRefs": ["tx-001"] },
+      { "section": "progression", "text": "Post-op stable (prog-001); follow-up MRI shows progression at the resection margin (prog-002), interval 73 days.", "evidenceRefs": ["prog-001", "prog-002"] }
+    ],
+    "evidenceTrail": ["pat-001", "les-001", "hist-001", "find-mri-001", "find-ct-001", "find-us-001", "find-histo-001", "dx-001", "tx-001", "prog-001", "prog-002"]
+  },
+
+  "handoff": {
+    "_note": "Console relays human confirmations to the owning components; it writes nothing. Reasoner/Connectome promote dx-001 to confirmed; Pathways/Connectome promote tx-001 to active. Both governed by Sentinel (C8). Matches the Connectome case.",
+    "diagnosis": { "to": "reasoner+connectome", "result": "dx-001 status=confirmed" },
+    "plan": { "to": "pathways+connectome", "result": "tx-001 status=active" }
+  }
+}

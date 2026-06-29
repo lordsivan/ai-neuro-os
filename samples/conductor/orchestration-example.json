@@ -1,0 +1,123 @@
+{
+  "_comment": "ILLUSTRATIVE sample of Conductor (C6) orchestrating the running case end-to-end on a study-ingested event. Not runnable, not a real patient. Ties to samples/connectome/patient-example.json (pat-001, les-001, find-mri-001, prog-002), samples/perception/*, samples/pathways/treatment-and-monitoring-example.json (assessResponse → prog-002), and samples/reasoner/diagnosis-example.json (dx-001). Conductor ROUTES and ORDERS; it does not confirm clinical facts.",
+
+  "task": {
+    "id": "task-001",
+    "kind": "event",
+    "trigger": "study-ingested",
+    "subject": "les-001",
+    "patient": "pat-001",
+    "payload": { "study": "study-mri-003-fu", "modality": "MRI", "ingestedAt": "2026-04-15" },
+    "status": "succeeded",
+    "createdAt": "2026-04-15T09:00:00Z",
+    "_note": "Bound via scheduleOnEvent; templated DAG (not LLM-decomposed)."
+  },
+
+  "plan": {
+    "id": "plan-001",
+    "task": "task-001",
+    "strategy": "template",
+    "status": "completed",
+    "steps": [
+      {
+        "id": "s1", "capability": "perceive-study", "dependsOn": [],
+        "route": "rt-perception", "sideEffectClass": "compute",
+        "inputBindings": { "study": "task-001.payload.study" },
+        "produces": "find-mri-001", "state": "succeeded"
+      },
+      {
+        "id": "s2", "capability": "persist-finding", "dependsOn": ["s1"],
+        "route": "rt-connectome", "sideEffectClass": "action",
+        "inputBindings": { "finding": "s1.result" },
+        "produces": "find-mri-001@graph", "state": "succeeded"
+      },
+      {
+        "id": "s3", "capability": "assess-response", "dependsOn": ["s2"],
+        "route": "rt-pathways-assess", "sideEffectClass": "compute",
+        "inputBindings": { "lesion": "les-001", "current": "study-mri-003-fu" },
+        "produces": "prog-002", "state": "succeeded"
+      },
+      {
+        "id": "s4", "capability": "replan-on-progression", "dependsOn": ["s3"],
+        "route": "rt-pathways-replan", "sideEffectClass": "action",
+        "conditional": { "on": "s3.result.verdict", "equals": "progression" },
+        "inputBindings": { "lesion": "les-001" },
+        "produces": "planning-task-002", "state": "succeeded",
+        "_note": "Conditional satisfied because prog-002 verdict=progression; would be skipped if stable."
+      }
+    ],
+    "edges": [
+      { "from": "s1", "to": "s2" },
+      { "from": "s2", "to": "s3" },
+      { "from": "s3", "to": "s4", "conditional": "verdict=progression" }
+    ]
+  },
+
+  "routeCatalog": {
+    "_note": "Normalized at L2 from the MCP registry + component descriptors + health signals.",
+    "routes": [
+      { "id": "rt-perception", "target": "component:perception", "endpoint": "perceiveStudy", "version": "2.3", "healthState": "healthy", "policyRef": "pol-default" },
+      { "id": "rt-connectome", "target": "component:connectome", "endpoint": "adapter.persist", "version": "5.1", "healthState": "healthy", "policyRef": "pol-write" },
+      { "id": "rt-pathways-assess", "target": "component:pathways", "endpoint": "assessResponse", "version": "1.4", "healthState": "healthy", "policyRef": "pol-default" },
+      { "id": "rt-pathways-replan", "target": "component:pathways", "endpoint": "replanOnProgression", "version": "1.4", "healthState": "healthy", "policyRef": "pol-write" }
+    ],
+    "mcpReplicas": {
+      "_note": "Perception fronts segmentation MCP servers; the primary was unhealthy this run.",
+      "segmentation": [
+        { "id": "mcp-seg-a", "healthState": "unhealthy", "version": "3.0" },
+        { "id": "mcp-seg-b", "healthState": "healthy", "version": "3.0", "_note": "fallback replica" }
+      ]
+    },
+    "policies": [
+      { "id": "pol-default", "timeout": { "deadlineMs": 30000 }, "retry": { "maxAttempts": 2, "backoff": "exponential" }, "fallback": { "replicaOrder": ["mcp-seg-b"] }, "breaker": { "failureThreshold": 2, "cooldown": "120s" } },
+      { "id": "pol-write", "timeout": { "deadlineMs": 15000 }, "retry": { "maxAttempts": 1, "backoff": "none" }, "breaker": { "failureThreshold": 1, "cooldown": "60s" } }
+    ]
+  },
+
+  "execution": {
+    "_note": "L5 dispatch loop: dependencies respected; retry/fallback + circuit-break on the unhealthy seg server; Sentinel authorizes action-class steps.",
+    "invocations": [
+      { "id": "inv-1a", "step": "s1", "route": "rt-perception", "attempt": 1, "subInvocation": "mcp-seg-a", "outcome": "unavailable", "_note": "primary segmentation MCP down" },
+      { "id": "inv-1b", "step": "s1", "route": "rt-perception", "attempt": 2, "subInvocation": "mcp-seg-a", "outcome": "unavailable", "_note": "retry failed → breaker trips on mcp-seg-a" },
+      { "id": "inv-1c", "step": "s1", "route": "rt-perception", "attempt": 3, "subInvocation": "mcp-seg-b", "outcome": "ok", "result": "find-mri-001", "_note": "fallback to healthy replica → success" },
+      { "id": "inv-2", "step": "s2", "route": "rt-connectome", "attempt": 1, "authorized": "dec-s2", "outcome": "ok", "result": "find-mri-001 persisted (status=candidate)" },
+      { "id": "inv-3", "step": "s3", "route": "rt-pathways-assess", "attempt": 1, "outcome": "ok", "result": "prog-002 verdict=progression (candidate)" },
+      { "id": "inv-4", "step": "s4", "route": "rt-pathways-replan", "attempt": 1, "authorized": "dec-s4", "outcome": "ok", "result": "planning-task-002 scheduled" }
+    ],
+    "breakerEvents": [
+      { "route": "mcp-seg-a", "event": "tripped", "after": "inv-1b", "cooldown": "120s" }
+    ]
+  },
+
+  "sentinel": {
+    "_note": "Action-class steps (writes / effects) are authorized BEFORE dispatch; compute/read steps are not gated.",
+    "decisions": [
+      { "id": "dec-s2", "step": "s2", "action": "persist find-mri-001", "decision": "allow", "reason": "consent + access ok", "by": "Sentinel" },
+      { "id": "dec-s4", "step": "s4", "action": "schedule replanOnProgression", "decision": "allow", "reason": "in-scope monitoring follow-up", "by": "Sentinel" }
+    ]
+  },
+
+  "runContext": {
+    "id": "run-001",
+    "task": "task-001",
+    "results": {
+      "s1": "find-mri-001",
+      "s2": "find-mri-001@graph(candidate)",
+      "s3": "prog-002",
+      "s4": "planning-task-002"
+    },
+    "status": "succeeded",
+    "auditTrail": [
+      { "stepId": "s1", "route": { "target": "component:perception", "endpoint": "perceiveStudy", "version": "2.3" }, "attempts": 3, "outcome": "ok", "asserted_by": "conductor", "timestamp": "2026-04-15T09:00:05Z", "_note": "retry+fallback recorded" },
+      { "stepId": "s2", "route": { "target": "component:connectome", "endpoint": "adapter.persist", "version": "5.1" }, "attempts": 1, "outcome": "ok", "authorization": { "decision": "allow", "by": "Sentinel", "ref": "dec-s2" }, "asserted_by": "conductor", "timestamp": "2026-04-15T09:00:06Z" },
+      { "stepId": "s3", "route": { "target": "component:pathways", "endpoint": "assessResponse", "version": "1.4" }, "attempts": 1, "outcome": "ok", "asserted_by": "conductor", "timestamp": "2026-04-15T09:00:08Z" },
+      { "stepId": "s4", "route": { "target": "component:pathways", "endpoint": "replanOnProgression", "version": "1.4" }, "attempts": 1, "outcome": "ok", "authorization": { "decision": "allow", "by": "Sentinel", "ref": "dec-s4" }, "asserted_by": "conductor", "timestamp": "2026-04-15T09:00:09Z" }
+    ]
+  },
+
+  "handoff": {
+    "_note": "Conductor routed candidates and scheduled a follow-up; it confirmed nothing. find-mri-001 and prog-002 are persisted status=candidate; a human (Console C7) confirms. The re-plan (planning-task-002) re-enters Pathways for second-line options, matching the Pathways loopback (replanOnProgression).",
+    "produced": ["find-mri-001 (candidate)", "prog-002 (candidate)", "planning-task-002 (scheduled)"],
+    "owns": "routing + ordering + audit only; domain provenance belongs to Perception/Connectome/Pathways"
+  }
+}

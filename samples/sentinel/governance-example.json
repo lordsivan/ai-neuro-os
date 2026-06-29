@@ -1,0 +1,136 @@
+{
+  "_comment": "ILLUSTRATIVE sample of Sentinel (C8) governing two moments in the running case. Not runnable, not real patients. Ties to samples/recall/discovery-example.json (queryG_similarCases, pat-417) and samples/reasoner/diagnosis-example.json (dx-001 candidate→confirmed, evidence trail). Sentinel authorizes/gates/validates and records; it produces no clinical content.",
+
+  "moment1_cohortDiscovery": {
+    "_scenario": "Recall asks Sentinel to authorize discoverSimilarCases(pat-001) on cohort scope, reaching pat-417. Sentinel checks consent + scope, applies de-identification, allows, and audits.",
+    "request": {
+      "hook": "authorize(action=discoverSimilarCases, scope=cohort)",
+      "caller": "Recall (C3)",
+      "action": "discoverSimilarCases",
+      "target": "pat-001",
+      "scope": "cohort"
+    },
+    "principal": {
+      "id": "user-clin-22",
+      "subject": "Dr. A. Clinician",
+      "roles": ["clinician", "mdt-member"],
+      "org": "neuro-onc"
+    },
+    "consentRecord": {
+      "id": "consent-pat-001-cohort",
+      "patient": "pat-001",
+      "status": "active",
+      "purpose": "cohort-discovery-for-care",
+      "scope": "cohort",
+      "restrictions": ["de-identified-only"],
+      "source": "consent/PHI registry",
+      "timestamp": "2026-06-29"
+    },
+    "scopeGrant": {
+      "id": "grant-clin-22-cohort",
+      "principal": "user-clin-22",
+      "scope": "cohort",
+      "partitions": ["cohort-deident-neuro-onc"],
+      "obligations": ["deident"],
+      "grantedBy": "policy:cohort-access-v3",
+      "expiresAt": "2026-12-31"
+    },
+    "accessDecision": {
+      "id": "ad-001",
+      "principal": "user-clin-22",
+      "action": "discoverSimilarCases",
+      "scope": "cohort",
+      "effect": "allow",
+      "obligations": ["deident"],
+      "policyRefs": ["policy:cohort-access-v3"],
+      "reason": "active cohort consent + valid cohort ScopeGrant; allowed on de-identified partition with de-identify obligation",
+      "asserted_by": "algorithm",
+      "method": "policy-eval",
+      "timestamp": "2026-06-29"
+    },
+    "deIdentificationApplied": {
+      "obligation": "deident",
+      "effect": "cohort result returned without direct identifiers",
+      "_note": "Recall's match case-pat-417 is served as a de-identified candidate; see samples/recall/discovery-example.json queryG_similarCases."
+    },
+    "auditEvent": {
+      "id": "audit-2042",
+      "actor": "user-clin-22",
+      "action": "discoverSimilarCases",
+      "target": "pat-001",
+      "scope": "cohort",
+      "decision": "allow",
+      "refs": ["consent-pat-001-cohort", "grant-clin-22-cohort", "ad-001"],
+      "timestamp": "2026-06-29",
+      "seq": 2042,
+      "prevHash": "h2041",
+      "hash": "h2042"
+    }
+  },
+
+  "moment2_promotion": {
+    "_scenario": "Console asks Sentinel to govern promotion of candidate dx-001 to confirmed (after histology). Sentinel checks the confirming principal's role and provenance completeness of the evidence trail, permits, and audits.",
+    "request": {
+      "hook": "governPromotion(candidate=dx-001, transition=candidate→confirmed)",
+      "caller": "Console (C7)",
+      "action": "promote",
+      "target": "dx-001"
+    },
+    "principal": {
+      "id": "user-clin-22",
+      "subject": "Dr. A. Clinician",
+      "roles": ["clinician", "mdt-member", "attending"],
+      "org": "neuro-onc"
+    },
+    "provenanceRecords": [
+      { "id": "prov-find-mri-001", "target": "find-mri-001", "asserted_by": "algorithm", "method": "seg-v2", "confidence": 0.91, "source": "Perception", "timestamp": "2026-01-02", "completeness": "complete" },
+      { "id": "prov-find-ct-001", "target": "find-ct-001", "asserted_by": "algorithm", "method": "seg-v2", "confidence": 0.88, "source": "Perception", "timestamp": "2026-01-02", "completeness": "complete" },
+      { "id": "prov-find-histo-001", "target": "find-histo-001", "asserted_by": "human", "method": "manual read", "confidence": 0.98, "source": "pathology", "timestamp": "2026-01-12", "completeness": "complete" },
+      { "id": "prov-dx-001", "target": "dx-001", "asserted_by": "algorithm", "method": "hybrid: rules+llm", "confidence": 0.62, "source": "Reasoner", "timestamp": "2026-01-03", "completeness": "complete" }
+    ],
+    "provenanceCheck": {
+      "evidenceTrail": ["find-mri-001", "find-ct-001", "find-histo-001", "dx-001", "WHO-CNS5"],
+      "completeness": "complete",
+      "_note": "Every assertion in the trail carries a complete ProvenanceRecord (asserted_by/method/confidence/timestamp). An incomplete trail would block."
+    },
+    "roleCheck": {
+      "requiredRole": ["attending", "mdt-member"],
+      "principalRoles": ["clinician", "mdt-member", "attending"],
+      "result": "authorized"
+    },
+    "accessDecision": {
+      "id": "ad-002",
+      "principal": "user-clin-22",
+      "action": "promote",
+      "scope": "dx-001",
+      "effect": "allow",
+      "obligations": [],
+      "policyRefs": ["policy:promotion-gate-v2"],
+      "reason": "confirming principal holds authorized role; evidence-trail provenance complete",
+      "asserted_by": "algorithm",
+      "method": "policy-eval",
+      "timestamp": "2026-01-12"
+    },
+    "promotionVerdict": "permit",
+    "auditEvent": {
+      "id": "audit-2071",
+      "actor": "user-clin-22",
+      "action": "promote",
+      "target": "dx-001",
+      "scope": "patient:pat-001",
+      "decision": "permit",
+      "refs": ["prov-find-histo-001", "prov-dx-001", "ad-002", "policy:promotion-gate-v2"],
+      "timestamp": "2026-01-12",
+      "seq": 2071,
+      "prevHash": "h2070",
+      "hash": "h2071"
+    },
+    "_handoff": "On permit, Console confirms dx-001 → status=confirmed in Connectome. Sentinel recorded WHO confirmed and that the trail was complete; it did not confirm the diagnosis itself."
+  },
+
+  "invariants": {
+    "provenanceStackWide": "Every asserted Connectome node/edge carries asserted_by/method/confidence/timestamp (see docs/components/connectome/04-domain-model.md); Sentinel validates completeness and re-checks at promotion.",
+    "cohortScope": "Cohort retrieval is gated by Sentinel and served only de-identified (see docs/components/recall/08-granularity-and-spaces.md).",
+    "auditImmutable": "AuditEvents are append-only and hash-chained (seq/prevHash/hash); Sentinel never mutates the graph."
+  }
+}

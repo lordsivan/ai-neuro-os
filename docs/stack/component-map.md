@@ -27,9 +27,9 @@ grouped into planes that build outward from Connectome.
 | C3 | **Recall** | data / sensory | The vector-memory service: owns the embedding + vector-index lifecycle and serves multi-granular similarity/discovery (findings, studies, cases, text). Fronts the embedding/vector MCP servers; Connectome stores only `vectorRef`s and delegates to Recall. | C1, embedding MCP | **Specified** — `docs/components/recall/` |
 | C4 | **Reasoner** | cognition | Diagnostic reasoning: hybrid (rule-checklists + LLM) differential generation, criteria application (McDonald / RANO / WHO CNS), evidence surfacing, and next-discriminating-test guidance. Proposes a candidate `Diagnosis`; a human confirms. | C1, C3 | **Specified** — `docs/components/reasoner/` |
 | C5 | **Pathways** | cognition | Two tracks over one scaffold: **treatment planning** (guidelines + clinical-trial matching → candidate `TreatmentPlan`, MDT-confirmed) and **event-driven monitoring** (RANO/McDonald response assessment → `ProgressionAssessment` on each new study). | C1, C4 | **Specified** — `docs/components/pathways/` |
-| C6 | **Conductor** | control | Orchestration **service**: plans tasks, routes calls across components + MCP servers, runs the agent loop, manages the MCP registry/health. Supporting service, not the center. | all (routes) | to brainstorm |
-| C7 | **Console** | interaction | Clinician-facing agent / UI: NL query, navigation, explanation, report drafting. | C1, C4, C5 | to brainstorm |
-| C8 | **Sentinel** | cross-cutting | Provenance, audit, consent / PHI, access control, model & safety governance, eval / drift — applied across all components. | all | to brainstorm |
+| C6 | **Conductor** | control | Orchestration **service**: plans tasks into a step DAG, routes calls across components + MCP servers (health-aware, retry/fallback/circuit-break), runs the agent loop, wires events, manages the MCP registry. Supporting service, not the center. | all (routes) | **Specified** — `docs/components/conductor/` |
+| C7 | **Console** | interaction | Clinician-facing agent / UI: NL query → navigation, multi-component view composition, evidence/provenance explanation, report drafting, and the place a human **confirms** candidates. | C1, C4, C5 | **Specified** — `docs/components/console/` |
+| C8 | **Sentinel** | cross-cutting | Governance over the whole stack: provenance, immutable audit, consent / PHI, access control, candidate→confirmed promotion gates, model & safety governance, eval / drift. Called by others; produces no clinical content. | all | **Specified** — `docs/components/sentinel/` |
 
 **Folded in (not separate components):**
 - **Intake** (PACS/EHR/LIS connection, pulling studies/records) → Connectome's **L2
@@ -37,9 +37,9 @@ grouped into planes that build outward from Connectome.
   (scheduling, streaming, backfill).
 - **Cohort / population analytics** → **Recall** (C3).
 
-> Only **C1 Connectome** is specified in full. C2–C8 each have a one-paragraph stub at
-> `docs/components/<name>/00-overview.md`; flesh each out into a full L1–L6 spec as we
-> brainstorm it.
+> **All eight components (C1–C8) are now specified in full** — each has a complete L1–L6
+> spec under `docs/components/<name>/` (00–09) plus a worked sample under `samples/<name>/`
+> threaded through the same running clinical case.
 
 ## Dependency map (knowledge-first)
 
