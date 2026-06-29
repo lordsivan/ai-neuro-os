@@ -11,6 +11,11 @@ A *component* is a product module that spans the layers (L1–L6, see
 `docs/components/connectome/01-layered-architecture.md`) and orchestrates MCP
 capabilities for a single domain purpose.
 
+> **Why everything sits behind MCP:** each capability is a **heavyweight subsystem with
+> several viable alternative implementations, built and owned by different teams**. The MCP
+> contract is the team-ownership + swappability boundary (Conway's law, made deliberate) —
+> not a way to defer the hard work. See `docs/stack/design-decisions.md` (ADR-0001).
+
 ## Center of gravity: knowledge-first
 
 `ai-neuro-os` is fundamentally a **knowledge graph with apps around it**. **Connectome**
