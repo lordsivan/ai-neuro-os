@@ -1,0 +1,81 @@
+{
+  "_comment": "ILLUSTRATIVE sample of Pathways (C5): planning track + event-driven monitoring track. Not runnable, not a real patient. Ties to samples/connectome/patient-example.json (dx-001, tx-001, les-001, prog-001, prog-002) and samples/reasoner/diagnosis-example.json.",
+
+  "planningTrack": {
+    "planningCase": { "id": "pc-001", "subject": "dx-001", "intent": "curative", "at": "2026-01-12", "status": "completed" },
+
+    "managementContext": {
+      "diagnosis": { "ref": "dx-001", "condition": "High-grade glioma", "grade": "4" },
+      "patientFactors": { "age": 52, "sex": "F", "performanceStatus": "good", "comorbidities": ["hypertension"] },
+      "guidelines": [
+        { "id": "gm-hgg", "guidelineId": "HGG-therapy-v3", "recommendation": "resection → concurrent chemoradiation → adjuvant systemic", "conditions": "met", "evidenceGrade": "high" }
+      ],
+      "trials": [
+        { "id": "tm-gbm-a", "trialId": "GBM-2026-A", "eligibility": "eligible", "criteriaResults": [ { "criterion": "newly diagnosed HGG", "result": "met" }, { "criterion": "performance status adequate", "result": "met" } ], "rationale": "newly-diagnosed grade 4, good performance status" }
+      ],
+      "precedent": [
+        { "ref": "case-pat-417", "regimen": "resection + chemoradiation + adjuvant", "outcome": "progression at 4 months", "source": "Recall" }
+      ]
+    },
+
+    "treatmentOptions": [
+      { "id": "to-resect", "kind": "surgery", "detail": "maximal safe resection", "supporting": ["gm-hgg"], "confidence": 0.85, "selected": true },
+      { "id": "to-crt", "kind": "radiotherapy", "detail": "concurrent chemoradiation", "supporting": ["gm-hgg"], "confidence": 0.8, "selected": true },
+      { "id": "to-adj", "kind": "systemic", "detail": "adjuvant chemotherapy", "supporting": ["gm-hgg", "case-pat-417"], "confidence": 0.78, "selected": true },
+      { "id": "to-trial", "kind": "trial", "detail": "enroll GBM-2026-A", "supporting": ["tm-gbm-a"], "confidence": 0.6, "selected": false, "_note": "offered as alternative to standard adjuvant" },
+      { "id": "to-surv", "kind": "surveillance", "detail": "interval MRI surveillance", "supporting": ["gm-hgg"], "confidence": 0.9, "selected": true }
+    ],
+
+    "treatmentPlanProposal": {
+      "id": "tx-001",
+      "intent": "curative",
+      "components": ["maximal safe resection", "concurrent chemoradiation", "adjuvant chemotherapy", "interval MRI surveillance"],
+      "alternatives": ["enroll GBM-2026-A in place of standard adjuvant"],
+      "schedule": "resection 2026-01-10; chemoradiation 2026-02 to 2026-03; surveillance MRI thereafter",
+      "status": "candidate",
+      "confidence": 0.78,
+      "asserted_by": "algorithm",
+      "method": "guideline+trial+precedent",
+      "timestamp": "2026-01-12",
+      "rationale": "Grade-4 glioma: high-grade guideline (grade A) supports resection→chemoradiation→adjuvant; trial GBM-2026-A eligible as alternative; precedent pat-417 concordant."
+    },
+
+    "handoff": { "to": "connectome:adapter", "action": "persist TreatmentPlan tx-001 status=candidate, treated_by dx-001", "_note": "Tumor board (MDT) via Console confirms → status=active. Matches Connectome case." }
+  },
+
+  "monitoringTrack": {
+    "_note": "Event-driven: each follow-up study ingest triggers assessResponse.",
+    "assessments": [
+      {
+        "monitoringTask": { "id": "mt-001", "subject": "les-001", "trigger": "study-mri-002-postop", "scheme": "RANO", "at": "2026-02-01" },
+        "comparison": { "baseline": "study-mri-001", "current": "study-mri-002-postop", "measurableChange": "resection cavity; no measurable residual or new lesion" },
+        "criteriaResults": [ { "criterion": "new measurable enhancing disease", "result": "not-met" }, { "criterion": "≥25% increase target", "result": "not-met" } ],
+        "confounderFlags": ["immediate post-op changes considered"],
+        "responseAssessment": {
+          "id": "prog-001", "scheme": "RANO", "verdict": "stable", "status": "stable",
+          "deltaMeasurements": { "target_change_pct": 0 },
+          "comparedStudies": ["study-mri-001", "study-mri-002-postop"],
+          "status_persist": "candidate", "asserted_by": "algorithm", "timestamp": "2026-02-01"
+        }
+      },
+      {
+        "monitoringTask": { "id": "mt-002", "subject": "les-001", "trigger": "study-mri-003-fu", "scheme": "RANO", "at": "2026-04-15" },
+        "comparison": { "baseline": "study-mri-002-postop", "current": "study-mri-003-fu", "measurableChange": "new enhancement at resection margin; measurable increase" },
+        "criteriaResults": [ { "criterion": "new measurable enhancing disease", "result": "met" } ],
+        "confounderFlags": ["outside pseudo-progression window → progression not suppressed"],
+        "responseAssessment": {
+          "id": "prog-002", "scheme": "RANO", "verdict": "progression", "status": "progression",
+          "deltaMeasurements": { "new_enhancing_lesion": true },
+          "comparedStudies": ["study-mri-002-postop", "study-mri-003-fu"],
+          "status_persist": "candidate", "asserted_by": "algorithm", "timestamp": "2026-04-15"
+        }
+      }
+    ],
+    "timelineEdges": [
+      { "type": "assessed_by", "from": "les-001", "to": "prog-001" },
+      { "type": "assessed_by", "from": "les-001", "to": "prog-002" },
+      { "type": "progresses_to", "from": "prog-001", "to": "prog-002", "interval": "73d" }
+    ],
+    "loopback": { "trigger": "prog-002 verdict=progression", "action": "replanOnProgression(les-001) → re-enter planning for second-line options" }
+  }
+}
