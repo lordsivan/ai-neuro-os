@@ -4,6 +4,11 @@ Architecture Decision Records: the *why* behind the stack's load-bearing choices
 Each records the decision, the reasoning, the consequences, and what it does **not**
 settle — so the rationale survives even when the prose elsewhere only states the *what*.
 
+> **Scope:** this branch is **architecture & design only**. These ADRs cover *architecture*
+> rationale. Implementation/delivery planning (the Phase-1 mobile app, phasing, UI roadmap)
+> is intentionally **kept separate** in `docs/roadmap/implementation-phases.md` so it does
+> not distract from the design.
+
 ---
 
 ## ADR-0001 — Heavyweight capabilities live behind MCP boundaries
@@ -142,82 +147,11 @@ components should be treated as a worked example of the contracts — replaceabl
 
 ---
 
-## ADR-0003 — Phase 1: a functional end-user app prototype, built for BA understanding; Phase 2: clinical rollout
+## Out of scope on this branch — implementation & delivery
 
-**Status:** accepted (planned next deliverable) · **Scope:** the first runnable artifact and its purpose
-
-### Decision — two phases, deliberately different purposes
-
-- **Phase 1 — Functional prototype of the *actual end-user application* (this deliverable).**
-  A runnable, **mobile-first** app that is **the real product experience** — the
-  clinician-facing Console (C7) journeys: ask / navigate the cross-modal lesion view /
-  see findings, diagnosis, plan, progression / discovery / confirm a candidate / get
-  notified — running on **mock + realistic data**. It is **NOT a document navigator, a
-  requirements/metrics dashboard, or a spec-visualization tool.** It is the end-user app
-  itself. Its **audience and purpose in Phase 1 are the business analyst**: BAs (and
-  stakeholders) come to **understand the product surface and the requirements — which live
-  across the several-thousand-page spec corpus — by *using the real application*,** not by
-  reading documents. The app *is* the requirements made tangible.
-- **Phase 2 — Clinical/rollout application (later).** The same app hardened for clinical
-  use and deployment (real components, validation, regulatory, integration). Out of scope
-  for Phase 1.
-
-### Phase-1 shape
-
-- **Same UX as the eventual product:** the genuine Console end-user journeys and screens,
-  not a meta/annotation layer over them.
-- **Mock + realistic data:** high-quality hand-crafted mock data, optionally supplemented by
-  **realistic public data** (open datasets) for visual fidelity.
-- **Mock cognition behind the real contracts:** the AI/clinical results are mocked, but each
-  component/MCP capability is a **stub conforming to its specified role + interface** — so
-  building the app doubles as a **conformance test of the inter-component contracts**
-  (ADR-0002) and feeds under-specified seams back into the specs.
-- **UI: mobile-first**, scoped to the Console interaction surface (ask / navigate / explain /
-  confirm / notify). Not diagnostic image reading.
-- **UI roadmap (beyond Phase 1):** mobile-first → web → **chat-based / agentic**; the
-  interaction surface evolves, the architecture beneath does not.
-
-### Why (the rationale)
-
-- **A working app communicates requirements better than a corpus.** BAs grasp scope, gaps,
-  and intent by *operating the real surface* far faster and more reliably than by reading
-  thousands of pages — and experiencing the product elicits/validates requirements that
-  prose review misses. The app is a requirements **elicitation and validation** vehicle in
-  the form of the genuine product.
-- **It makes the architecture's seams concrete cheaply.** Mock components through the real
-  contracts gives BAs a faithful product *and* proves the contracts are buildable — one
-  artifact, two payoffs.
-- **Mobile-first fits the Console interaction surface** (ask/navigate/confirm/notify); the
-  heavyweight image reading is delegated, not reimplemented.
-
-### Consequences
-
-- **Fidelity to the specified product is the core property:** the prototype must faithfully
-  realize the Console journeys and the worked case, so what a BA experiences *is* the
-  specified surface.
-- Reuse the existing worked-case IDs (`pat-001`, `les-001`, `dx-001`, `tx-001`,
-  `prog-001/002`, cohort `pat-417/512`) so app and docs stay aligned.
-- Building it will expose gaps/ambiguities in the specs; those flow **back into the docs**.
-- Public data carries **dataset provenance** ("public dataset, not a real patient") and
-  respects licenses.
-
-### What this ADR does **not** settle (honest limits)
-
-- **It is the real app experience, so it *will* look like a working clinical product —
-  while the cognition is mock.** That persuasiveness is the point (for BA understanding) and
-  the risk (false confidence). Mitigation: keep it **internal / BA-facing** and **clearly
-  labeled mock-data, not clinically validated**; it is a requirements vehicle, not evidence
-  the AI works.
-- **Phase 1 validates the *surface*, not the *capability*.** Experiencing the journeys
-  confirms what the product should do; it does not confirm any model is accurate. Real
-  components, validation, and regulatory work are Phase 2 and are not discharged here.
-- **Realistic public data ≠ validation;** it raises visual fidelity only, and real images
-  paired with mock findings must be marked as such.
-
-### Implication for reviewers
-
-Judge the Phase-1 app as a **functional prototype of the end-user product used for BA
-requirement understanding**: does operating it convey the real surface and requirements,
-does it faithfully realize the specified Console journeys + worked case, and did building it
-**exercise the inter-component contracts** (conformance signal)? It is the genuine app on
-mock cognition — **not** a clinical demo and **not** evidence the capabilities work.
+Delivery planning — the **Phase-1 mobile end-user-app prototype** (built for BA
+understanding), the **mobile → web → chat/agentic** UI roadmap, and **Phase-2 clinical
+rollout** — is intentionally **kept out of the design** and lives in
+**`docs/roadmap/implementation-phases.md`**. It is not part of the architecture
+specification and the design does not depend on it. This separation keeps the branch
+focused on architecting and design.
