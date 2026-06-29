@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-neuro-stack/contracts/0.0.1/domain/shared.schema.json",
+  "title": "ai-neuro-os shared domain primitives (v0.0.1 draft)",
+  "description": "Formalizes the stack-wide shared attributes, enums, and the candidate/confirmed + provenance discipline. Source of truth: docs/components/connectome/04-domain-model.md and 09-data-model-reference.md. DRAFT STARTER — a fragment of the full contract.",
+
+  "$defs": {
+    "AssertedBy": {
+      "description": "Who/what made an assertion. Source: shared provenance attribute set.",
+      "enum": ["human", "algorithm", "embedding"]
+    },
+    "Status": {
+      "description": "Candidate-until-confirmed discipline (stack-wide invariant).",
+      "enum": ["candidate", "confirmed"]
+    },
+    "Modality": {
+      "enum": ["MRI", "CT", "Ultrasound", "Histology"]
+    },
+    "Provenance": {
+      "description": "Stamped on every asserted node and edge. Governed by Sentinel (C8).",
+      "type": "object",
+      "required": ["asserted_by", "confidence", "timestamp"],
+      "properties": {
+        "source": { "type": "string", "description": "originating system / MCP server" },
+        "asserted_by": { "$ref": "#/$defs/AssertedBy" },
+        "method": { "type": "string", "description": "how produced (e.g. 'manual read', 'seg-v2', 'hybrid: rules+llm')" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "calibrated 0..1" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Node": {
+      "description": "Base shape every domain node carries (id + provenance).",
+      "type": "object",
+      "required": ["id", "provenance"],
+      "properties": {
+        "id": { "type": "string", "description": "stable, deterministic domain id" },
+        "provenance": { "$ref": "#/$defs/Provenance" }
+      }
+    },
+    "Edge": {
+      "description": "Base shape every domain edge carries. Edges that can be proposed carry status.",
+      "type": "object",
+      "required": ["type", "from", "to", "provenance"],
+      "properties": {
+        "type": {
+          "enum": [
+            "has_history", "has_encounter", "has_study", "acquired_with",
+            "contains_series", "has_finding", "located_at",
+            "manifestation_of", "corresponds_to",
+            "supports", "confirmed_by", "treated_by",
+            "assessed_by", "progresses_to"
+          ]
+        },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "status": { "$ref": "#/$defs/Status" },
+        "mechanism": {
+          "description": "For corresponds_to / manifestation_of: which correlation mechanism (see connectome/06).",
+          "enum": ["lesion", "location", "registration", "temporal", "embedding"]
+        },
+        "provenance": { "$ref": "#/$defs/Provenance" }
+      }
+    }
+  }
+}
