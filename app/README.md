@@ -27,11 +27,32 @@ requirements by *using* it**. *Not* a clinical product; *not* a doc/requirements
   conformance, layering conformance, invariant conformance, worked-case parity
   (reproduces the `pat-001…` case against the design's `../samples/` golden file).
 
-## Status
+## Status — v0.0.1 preview is live (`index.html`)
 
-**Placeholder.** No application code yet — this establishes the separated home and the
-conformance rules. Implementation begins once the contract artifact (`../contracts/`) has a
-first tagged version to pin and the app repo/tooling is set up.
+A **self-contained, mobile-first preview** (`app/index.html`) now runs the worked case
+(`pat-001`) as the real Console experience: cross-modal findings, the **candidate diagnosis
+you can confirm**, the treatment plan (MDT-approve), the RANO progression timeline, and
+embedding discovery — with a **trust toggle** (Explore vs Strict) and confirmed-vs-candidate
+badges throughout. **Mock cognition**, clearly labelled, per ADR-0003.
+
+> It is a **UX / requirements preview**, *not* yet contract-conformant: it has **no** layered
+> modules and **no** CI gates — single file, no build, no dependencies. Those land when
+> `../contracts/` has a tagged version to pin and the app tooling is set up.
+
+### Launch it from GitHub (no PC needed)
+
+**Option A — GitHub Pages (best, gives a phone-friendly URL):**
+1. Repo → **Settings → Pages**.
+2. **Build and deployment → Source: Deploy from a branch.**
+3. Branch: `claude/medical-imaging-navigation-e14zs0`, folder **`/ (root)`** → **Save**.
+4. Wait ~1 minute, then open: **`https://<owner>.github.io/<repo>/app/`**
+   (e.g. `https://lordsivan.github.io/ai-neuro-os/app/`).
+   *Pages requires the repo to be **public** (or GitHub Pro for private).*
+
+**Option B — instant, public repo, no settings (htmlpreview):**
+open `https://htmlpreview.github.io/?https://raw.githubusercontent.com/<owner>/<repo>/claude/medical-imaging-navigation-e14zs0/app/index.html`
+
+## Intended structure (when real code lands)
 
 ## Intended structure (when code lands)
 
