@@ -1,0 +1,189 @@
+{
+  "_comment": "ILLUSTRATIVE sample data for the Connectome domain model. NOT a runnable program and NOT a real patient. Demonstrates one general-neurology case worked up across all four modalities, unified by one abstract Lesion, with diagnosis, treatment and a progression timeline. See samples/connectome/patient-example.md for the narrative and 04/05/06 for the model.",
+
+  "patient": {
+    "id": "pat-001",
+    "demographics": { "age": 52, "sex": "F" },
+    "source": "fhir"
+  },
+
+  "patientHistory": {
+    "id": "hist-001",
+    "presentingComplaint": "3 weeks of progressive headaches and right-arm weakness",
+    "comorbidities": ["hypertension"],
+    "medications": ["amlodipine"],
+    "familyHistory": [],
+    "onset": "2025-12-10",
+    "source": "fhir",
+    "asserted_by": "human"
+  },
+
+  "modalities": ["MRI", "CT", "Ultrasound", "Histology"],
+
+  "imagingStudies": [
+    {
+      "id": "study-ct-001", "modality": "CT", "acquiredAt": "2025-12-31",
+      "sourceId": "1.2.840.CT.001", "bodyRegion": "brain",
+      "series": [{ "id": "ser-ct-nc", "label": "non-contrast" }]
+    },
+    {
+      "id": "study-mri-001", "modality": "MRI", "acquiredAt": "2026-01-02",
+      "sourceId": "1.2.840.MR.001", "bodyRegion": "brain",
+      "series": [
+        { "id": "ser-mri-flair", "label": "FLAIR" },
+        { "id": "ser-mri-t1c", "label": "T1c" },
+        { "id": "ser-mri-dwi", "label": "DWI" }
+      ]
+    },
+    {
+      "id": "study-us-001", "modality": "Ultrasound", "acquiredAt": "2026-01-10",
+      "sourceId": "1.2.840.US.001", "bodyRegion": "brain (intra-operative)",
+      "series": [{ "id": "ser-us-bmode", "label": "B-mode (intra-op)" }]
+    },
+    {
+      "id": "study-histo-001", "modality": "Histology", "acquiredAt": "2026-01-12",
+      "sourceId": "SPECIMEN-001", "bodyRegion": "left frontal lobe",
+      "series": [
+        { "id": "ser-histo-he", "label": "H&E" },
+        { "id": "ser-histo-ihc", "label": "IHC panel" }
+      ]
+    }
+  ],
+
+  "anatomicalLocation": {
+    "id": "loc-lfront",
+    "atlasRegion": "Frontal lobe",
+    "laterality": "left",
+    "space": "MNI",
+    "coords": [-32, 24, 28],
+    "codes": { "FMA": "FMA:61824", "atlas": "AAL:Frontal_Sup_L" }
+  },
+
+  "findings": [
+    {
+      "id": "find-ct-001", "modality": "CT", "seriesId": "ser-ct-nc",
+      "kind": "focal hypodense lesion",
+      "attributes": { "density": "hypodense", "massEffect": true, "midlineShift_mm": 4, "calcification": false },
+      "measurements": { "diameter_mm": 31 },
+      "locationId": "loc-lfront",
+      "embeddingRef": { "model": "img-embed-v1", "dim": 768, "vectorRef": "vec://ct/find-ct-001" },
+      "source": "segmentation", "asserted_by": "algorithm", "method": "seg-v2", "confidence": 0.86,
+      "timestamp": "2025-12-31"
+    },
+    {
+      "id": "find-mri-001", "modality": "MRI", "seriesId": "ser-mri-t1c",
+      "kind": "ring-enhancing mass",
+      "attributes": { "flair": "hyperintense", "enhancement": "ring", "diffusionRestriction": "rim", "edema": "moderate" },
+      "measurements": { "volume_ml": 18.4, "diameter_mm": 33 },
+      "locationId": "loc-lfront",
+      "embeddingRef": { "model": "img-embed-v1", "dim": 768, "vectorRef": "vec://mri/find-mri-001" },
+      "source": "segmentation", "asserted_by": "algorithm", "method": "seg-v2", "confidence": 0.91,
+      "timestamp": "2026-01-02"
+    },
+    {
+      "id": "find-us-001", "modality": "Ultrasound", "seriesId": "ser-us-bmode",
+      "kind": "echogenic intra-axial lesion",
+      "attributes": { "echogenicity": "hyperechoic", "margins": "ill-defined", "vascularity": "present" },
+      "measurements": { "diameter_mm": 30 },
+      "locationId": "loc-lfront",
+      "embeddingRef": { "model": "img-embed-v1", "dim": 768, "vectorRef": "vec://us/find-us-001" },
+      "source": "human", "asserted_by": "human", "method": "intra-op read", "confidence": 0.8,
+      "timestamp": "2026-01-10"
+    },
+    {
+      "id": "find-histo-001", "modality": "Histology", "seriesId": "ser-histo-he",
+      "kind": "high-grade glial neoplasm",
+      "attributes": { "cellularity": "high", "atypia": "marked", "mitoses": "frequent", "necrosis": true, "microvascularProliferation": true, "grade": "4" },
+      "measurements": { "ki67_percent": 28 },
+      "locationId": "loc-lfront",
+      "embeddingRef": { "model": "path-embed-v1", "dim": 1024, "vectorRef": "vec://histo/find-histo-001" },
+      "source": "pathology", "asserted_by": "human", "method": "neuropathology read", "confidence": 0.98,
+      "timestamp": "2026-01-12"
+    }
+  ],
+
+  "lesion": {
+    "id": "les-001",
+    "label": "Left frontal mass",
+    "nature": "neoplastic",
+    "firstObserved": "2025-12-31",
+    "lastObserved": "2026-04-15",
+    "asserted_by": "human",
+    "_note": "The linchpin: every modality's finding is a manifestation_of this one lesion."
+  },
+
+  "diagnosis": {
+    "id": "dx-001",
+    "condition": "High-grade glioma",
+    "codes": { "SNOMED": "393563007", "ICD-11": "2A00" },
+    "certainty": "confirmed",
+    "basis": "MRI + CT imaging supported; histology confirmed (grade 4)",
+    "asserted_by": "human",
+    "timestamp": "2026-01-12"
+  },
+
+  "treatmentPlan": {
+    "id": "tx-001",
+    "intent": "curative",
+    "components": ["maximal safe resection", "concurrent chemoradiation", "adjuvant chemotherapy"],
+    "schedule": "resection 2026-01-10; chemoradiation 2026-02 to 2026-03",
+    "status": "active"
+  },
+
+  "progressionAssessments": [
+    {
+      "id": "prog-001", "timepoint": "2026-02-01", "scheme": "RANO",
+      "status": "stable", "basis": ["study-mri-001", "study-mri-002-postop"],
+      "_note": "post-operative baseline"
+    },
+    {
+      "id": "prog-002", "timepoint": "2026-04-15", "scheme": "RANO",
+      "status": "progression", "basis": ["study-mri-002-postop", "study-mri-003-fu"],
+      "_note": "new enhancement at resection margin"
+    }
+  ],
+
+  "edges": [
+    { "type": "has_history", "from": "pat-001", "to": "hist-001" },
+    { "type": "has_study", "from": "pat-001", "to": "study-ct-001" },
+    { "type": "has_study", "from": "pat-001", "to": "study-mri-001" },
+    { "type": "has_study", "from": "pat-001", "to": "study-us-001" },
+    { "type": "has_study", "from": "pat-001", "to": "study-histo-001" },
+
+    { "type": "has_finding", "from": "ser-ct-nc", "to": "find-ct-001" },
+    { "type": "has_finding", "from": "ser-mri-t1c", "to": "find-mri-001" },
+    { "type": "has_finding", "from": "ser-us-bmode", "to": "find-us-001" },
+    { "type": "has_finding", "from": "ser-histo-he", "to": "find-histo-001" },
+
+    { "type": "located_at", "from": "find-ct-001", "to": "loc-lfront" },
+    { "type": "located_at", "from": "find-mri-001", "to": "loc-lfront" },
+    { "type": "located_at", "from": "find-us-001", "to": "loc-lfront" },
+    { "type": "located_at", "from": "find-histo-001", "to": "loc-lfront" },
+
+    { "type": "manifestation_of", "from": "find-ct-001", "to": "les-001", "status": "confirmed", "mechanism": "location", "asserted_by": "algorithm", "confidence": 0.84 },
+    { "type": "manifestation_of", "from": "find-mri-001", "to": "les-001", "status": "confirmed", "mechanism": "lesion", "asserted_by": "human", "confidence": 0.97 },
+    { "type": "manifestation_of", "from": "find-us-001", "to": "les-001", "status": "confirmed", "mechanism": "registration", "asserted_by": "human", "confidence": 0.9 },
+    { "type": "manifestation_of", "from": "find-histo-001", "to": "les-001", "status": "confirmed", "mechanism": "registration", "asserted_by": "human", "confidence": 0.95 },
+
+    { "type": "corresponds_to", "from": "find-mri-001", "to": "find-ct-001", "status": "confirmed", "mechanism": "location", "asserted_by": "human", "confidence": 0.9 },
+    { "type": "corresponds_to", "from": "find-mri-001", "to": "find-histo-001", "status": "confirmed", "mechanism": "registration", "asserted_by": "human", "confidence": 0.93 },
+
+    { "type": "supports", "from": "les-001", "to": "dx-001" },
+    { "type": "confirmed_by", "from": "dx-001", "to": "find-histo-001", "basis": "grade 4 histology" },
+    { "type": "treated_by", "from": "dx-001", "to": "tx-001" },
+
+    { "type": "assessed_by", "from": "les-001", "to": "prog-001" },
+    { "type": "assessed_by", "from": "les-001", "to": "prog-002" },
+    { "type": "progresses_to", "from": "prog-001", "to": "prog-002", "interval": "73d" }
+  ],
+
+  "discoveryExample": {
+    "_comment": "Embedding-backed discovery (mechanism 5 / journey F). NOT a stored edge until confirmed.",
+    "query": "discover_similar(finding=find-mri-001, k=3, scope=cohort)",
+    "candidates": [
+      { "findingId": "find-mri-cohort-417", "patientId": "pat-417", "modality": "MRI", "similarity": 0.94, "status": "candidate" },
+      { "findingId": "find-mri-cohort-088", "patientId": "pat-088", "modality": "MRI", "similarity": 0.91, "status": "candidate" },
+      { "findingId": "find-ct-cohort-203", "patientId": "pat-203", "modality": "CT", "similarity": 0.88, "status": "candidate" }
+    ]
+  }
+}
