@@ -21,8 +21,11 @@ design specifications and illustrative sample data — **no application code yet
 3. **Domain + aggregate code only** — components hold domain-specific logic and
    aggregation/orchestration logic, nothing lower.
 
-See **[`docs/stack/component-map.md`](docs/stack/component-map.md)** for the full
-component map.
+The stack is **knowledge-first**: **Connectome** (C1) is the center — the shared
+knowledge graph every other component reads from and writes to — with **Perception**,
+**Recall**, **Reasoner**, **Pathways**, **Conductor**, **Console** and **Sentinel**
+building outward from it. See **[`docs/stack/component-map.md`](docs/stack/component-map.md)**
+for the full map and dependency diagram.
 
 ## Component 1 — Connectome
 

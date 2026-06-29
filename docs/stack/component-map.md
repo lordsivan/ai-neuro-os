@@ -7,49 +7,96 @@ of **components**. Every component obeys the same three rules:
 - **Layered** — each layer depends only on the one directly below it.
 - **Domain + aggregate code only** — orchestration and knowledge, never low-level processing.
 
-A *component* is a product module that spans the layers and orchestrates MCP
-capabilities for a single domain purpose. Components compose: higher components build
-on the knowledge and services lower components expose.
+A *component* is a product module that spans the layers (L1–L6, see
+`docs/components/connectome/01-layered-architecture.md`) and orchestrates MCP
+capabilities for a single domain purpose.
+
+## Center of gravity: knowledge-first
+
+`ai-neuro-os` is fundamentally a **knowledge graph with apps around it**. **Connectome**
+(C1) is the **center** — the shared memory every other component reads from and writes
+to. **Conductor** is a *supporting* orchestration service, not the core. Components are
+grouped into planes that build outward from Connectome.
 
 ## Components
 
-| # | Component | Role | Builds on | Status |
-|---|-----------|------|-----------|--------|
-| **C1** | **Connectome** | Cross-modal knowledge graph: ingest→normalize multimodal neuro data (histology / US / MRI / CT + history), correlate findings across modalities, embedding-backed **discovery**, and **navigation** (diagnosis / treatment / progression). | MCP servers | **Specified** — see `docs/components/connectome/` |
-| C2 | **Perception** *(candidate)* | Orchestrates imaging-AI MCP servers (segmentation / detection / classification) to produce structured **Findings** that feed Connectome. | C1 graph schema | to brainstorm |
-| C3 | **Index** *(candidate)* | Owns the embedding + vector-index lifecycle; the discovery substrate Connectome queries. | MCP embedding server | to brainstorm |
-| C4 | **Reasoner** *(candidate)* | Diagnostic reasoning, differential generation, guideline/criteria application over the Connectome graph. | C1, C3 | to brainstorm |
-| C5 | **Pathways** *(candidate)* | Treatment-planning, trial/guideline matching, longitudinal monitoring & response assessment. | C1, C4 | to brainstorm |
-| C6 | **Console** *(candidate)* | Clinician-facing agent / UI for query, navigation and explanation. | C1, C4, C5 | to brainstorm |
-| C7 | **Governance** *(candidate, cross-cutting)* | Provenance, audit, consent / PHI handling, model & safety governance applied across all components. | all | to brainstorm |
+| # | Component | Plane | Role | Builds on | Status |
+|---|-----------|-------|------|-----------|--------|
+| **C1** | **Connectome** | foundation | Cross-modal knowledge graph: ingest→normalize multimodal neuro data, correlate findings across modalities, embedding-backed **discovery**, **navigation** (diagnosis / treatment / progression). The center. | MCP servers (L1) | **Specified** — `docs/components/connectome/` |
+| C2 | **Perception** | data / sensory | Orchestrates imaging-AI MCP servers (segmentation / detection / characterization / measurement) → structured **Findings** that feed Connectome. | C1 schema, imaging MCP | to brainstorm |
+| C3 | **Recall** | data / sensory | Owns the embedding + vector-index lifecycle; the discovery substrate Connectome queries. Cohort / similar-case retrieval folded in here. | C1, embedding MCP | to brainstorm |
+| C4 | **Reasoner** | cognition | Diagnostic reasoning: differential generation, criteria application (McDonald / RANO / WHO CNS), evidence surfacing over the graph. | C1, C3 | to brainstorm |
+| C5 | **Pathways** | cognition | Treatment planning + guideline/trial matching + longitudinal monitoring & response assessment. | C1, C4 | to brainstorm |
+| C6 | **Conductor** | control | Orchestration **service**: plans tasks, routes calls across components + MCP servers, runs the agent loop, manages the MCP registry/health. Supporting service, not the center. | all (routes) | to brainstorm |
+| C7 | **Console** | interaction | Clinician-facing agent / UI: NL query, navigation, explanation, report drafting. | C1, C4, C5 | to brainstorm |
+| C8 | **Sentinel** | cross-cutting | Provenance, audit, consent / PHI, access control, model & safety governance, eval / drift — applied across all components. | all | to brainstorm |
 
-> Only **C1 Connectome** is specified in full. Names and boundaries for C2–C7 are
-> placeholders captured here so we can brainstorm them in place. Add a section per
-> component as it firms up; give each its own `docs/components/<name>/` folder.
+**Folded in (not separate components):**
+- **Intake** (PACS/EHR/LIS connection, pulling studies/records) → Connectome's **L2
+  adapters**. Promote to its own component only if ingestion grows complex
+  (scheduling, streaming, backfill).
+- **Cohort / population analytics** → **Recall** (C3).
 
-## Dependency sketch
+> Only **C1 Connectome** is specified in full. C2–C8 each have a one-paragraph stub at
+> `docs/components/<name>/00-overview.md`; flesh each out into a full L1–L6 spec as we
+> brainstorm it.
+
+## Dependency map (knowledge-first)
 
 ```mermaid
 flowchart TD
-    C6[C6 Console] --> C5[C5 Pathways]
-    C6 --> C4[C4 Reasoner]
+    subgraph interaction[Interaction]
+      C7[C7 Console]
+    end
+    subgraph cognition[Cognition]
+      C4[C4 Reasoner]
+      C5[C5 Pathways]
+    end
+    subgraph sensory[Data / Sensory]
+      C2[C2 Perception]
+      C3[C3 Recall]
+    end
+
+    C7 --> C4
+    C7 --> C5
     C5 --> C4
-    C4 --> C1[C1 Connectome]
-    C4 --> C3[C3 Index]
-    C2[C2 Perception] --> C1
+    C4 --> C1
+    C4 --> C3
+    C5 --> C1
+    C2 --> C1((C1 Connectome\nthe center))
     C3 --> C1
-    C1 --> MCP[(MCP servers\nL1 capabilities)]
-    C7[C7 Governance] -.cross-cutting.-> C1
-    C7 -.-> C4
-    C7 -.-> C5
+    C1 --> MCP[(MCP servers · L1)]
+
+    C6[C6 Conductor\norchestration service] -. routes .-> C1
+    C6 -. routes .-> C2
+    C6 -. routes .-> C4
+    C8[C8 Sentinel\ngovernance] -. cross-cutting .-> C1
+    C8 -. cross-cutting .-> C4
+    C8 -. cross-cutting .-> C5
+
+    style C1 fill:#ffe9b3,stroke:#b8860b,stroke-width:2px
+    style MCP fill:#eee,stroke:#999
 ```
+
+- **Solid arrows** = "reads/writes / builds on" dependencies (each points at what it
+  depends on; Connectome at the center sits directly on the MCP layer).
+- **Dotted** = Conductor (routes work) and Sentinel (governs) act *across* components
+  rather than sitting in the build-up chain.
+
+## Naming
+
+Names are **evocative-but-plain** — real words that hint at the role, no neuroanatomy
+required. `Connectome` is the one themed anchor (the map of connections); the rest read
+literally: Perception (sense), Recall (memory), Reasoner (think), Pathways (act),
+Conductor (route), Console (interface), Sentinel (guard).
 
 ## Shared conventions
 
-- **MCP capability layer (L1)** is shared across all components — see
-  `docs/components/connectome/02-mcp-capability-map.md` for the catalog Connectome uses;
-  later components extend it.
-- **Domain model & ontology (L3)** defined by Connectome is the lingua franca other
-  components read and write — see `docs/components/connectome/04-domain-model.md`.
-- **Provenance & confidence** on every asserted edge is a stack-wide rule (governed by
-  the future C7 Governance component).
+- **MCP capability layer (L1)** is shared across all components — the catalog Connectome
+  uses is in `docs/components/connectome/02-mcp-capability-map.md`; later components
+  extend it.
+- **Domain model & ontology (L3)** defined by Connectome
+  (`docs/components/connectome/04-domain-model.md`) is the lingua franca other components
+  read and write.
+- **Provenance & confidence** on every asserted node/edge is a stack-wide rule, governed
+  by **Sentinel** (C8).
