@@ -142,67 +142,77 @@ components should be treated as a worked example of the contracts — replaceabl
 
 ---
 
-## ADR-0003 — A runnable mock demonstrator (mobile-first), data-rich, capability-showcasing
+## ADR-0003 — Phase 1: a requirements-visualization platform (mobile-first); Phase 2: the clinical app
 
-**Status:** accepted (planned next deliverable) · **Scope:** the first runnable artifact
+**Status:** accepted (planned next deliverable) · **Scope:** the first runnable artifact and its purpose
 
-### Decision
+### Decision — two phases, deliberately different purposes
 
-Alongside the design docs, produce a **runnable mock implementation** that showcases the
-**full feature capability** end-to-end, with:
+- **Phase 1 — Requirements-visualization platform (this deliverable).** A runnable
+  **mobile-first** application whose **primary audience is business analysts** (and other
+  internal stakeholders), whose **purpose is to make the surface and the requirements —
+  already embedded across the several-thousand-page design corpus — legible, navigable, and
+  concrete.** It is a way to *see and understand what has been specified*, using the worked
+  case + mock/realistic data as the vehicle. **It is not a clinical product, not a clinician
+  tool, and not a capability demo.** Think: an interactive, walkable rendering of the specs.
+- **Phase 2 — Clinical/rollout application (later).** The full web and/or mobile app built
+  for clinical use and deployment. Out of scope for Phase 1.
 
-- **Mock + realistic data:** high-quality hand-crafted mock data, supplemented by
-  **realistic public data pulled from the internet** (open imaging/clinical datasets).
-- **Mock components behind the real contracts:** each component (and its MCP capabilities)
-  is a **stub/mock that conforms to the same role + interface** the design specifies — so
-  the demonstrator doubles as the **first conformant reference implementation** (ADR-0002)
-  and as a way to *test that the contracts are precise enough to build against*.
-- **UI: mobile-first.** The Console (C7) surface — ask / navigate / explain / confirm /
-  notify — rendered mobile-first.
-- **UI roadmap:** mobile-first → web app → **chat-based / agentic** application. The
-  interaction surface evolves; the architecture beneath does not.
+### Phase-1 shape
+
+- **Mock + realistic data:** high-quality hand-crafted mock data, optionally supplemented by
+  **realistic public data** (open datasets) for visual fidelity — purely to make the
+  requirements tangible.
+- **Mock components behind the real contracts:** components/MCP capabilities are
+  **stubs/mocks that conform to the specified roles + interfaces**, so building the
+  visualizer doubles as a **conformance test of the inter-component contracts** (ADR-0002)
+  and surfaces under-specified seams as feedback into the specs.
+- **UI: mobile-first**, scoped to the Console (C7) ask / navigate / explain / confirm /
+  notify surface and to *traversing the requirements* (component map → component → layer →
+  worked-case step). Not diagnostic image reading.
+- **UI roadmap (beyond Phase 1):** mobile-first → web → **chat-based / agentic**; the
+  interaction surface evolves, the architecture beneath does not.
 
 ### Why (the rationale)
 
-- **Makes the seams concrete.** A reference architecture's value is its contracts; a
-  runnable mock that wires mock components through those contracts is the cheapest way to
-  prove the seams are real and complete (closes the "narrative contracts" gap in ADR-0002
-  without waiting for real ML/clinical components).
-- **Showcases capability without owning it.** It demonstrates the *experience and the
-  flow* (cross-modal navigation, candidate→confirmed, discovery, monitoring) using mock
-  cognition, so stakeholders can see the whole loop before any heavyweight component exists.
-- **Mobile-first matches the Console surface.** The clinician interactions Console owns
-  (natural-language ask, navigate, confirm a candidate, get notified) are a good fit for
-  mobile; the heavyweight image-reading is delegated, not reimplemented in the demo.
+- **The spec corpus is large and hard to hold in the head.** Thousands of pages across 8
+  components × 6 layers × samples is exactly the kind of thing a BA needs to *walk*, not
+  read linearly. A visualizer turns the documents into a navigable surface so requirements
+  and scope can actually be understood and signed off.
+- **It makes the architecture's seams concrete cheaply.** Wiring mock components through the
+  real contracts proves the contracts are complete *and* gives the BA a faithful surface —
+  one artifact, two payoffs.
+- **Mobile-first fits a BA review tool** (browse, drill in, annotate, walk a scenario) far
+  better than it would fit clinical image reading.
 
 ### Consequences
 
-- The demonstrator should **reuse the existing worked-case IDs** (`pat-001`, `les-001`,
-  `dx-001`, `tx-001`, `prog-001/002`, cohort `pat-417/512`) so docs and demo stay aligned.
-- Public data must carry **dataset provenance** ("public dataset, not a real patient") and
-  respect dataset **licenses/usage terms**; the mock's `asserted_by`/provenance fields make
-  this natural to record.
-- Building the mock will surface under-specified contracts — that feedback should flow
-  **back into the component specs** (the demo is also a spec test).
+- **Traceability is the core property.** Every screen/element should **cite the doc /
+  requirement it visualizes** (component, layer, sample ID), so the visualizer stays a *view
+  of* the specs — not a second, drifting source of truth.
+- Reuse the existing worked-case IDs (`pat-001`, `les-001`, `dx-001`, `tx-001`,
+  `prog-001/002`, cohort `pat-417/512`) so docs and visualizer stay aligned.
+- Building it will expose gaps/ambiguities in the specs; those flow **back into the docs**.
+- Any public data carries **dataset provenance** ("public dataset, not a real patient") and
+  respects licenses.
 
-### What this ADR does **not** settle (honest limits — read before demoing)
+### What this ADR does **not** settle (honest limits)
 
-- **A mock that showcases "full capability" is not evidence the capability works.** Like the
-  worked case, a polished demo with **pre-baked findings/diagnoses/confidences** proves the
-  *representation, flow, and UX* — not that any model is accurate. It must be **labeled as a
-  capability/UX showcase with mock cognition**, or it will manufacture false confidence in
-  stakeholders. The dangerous failure mode is a convincing mobile demo being mistaken for a
-  working clinical product.
-- **Mobile-first ≠ diagnostic image reading.** The mock UI should scope to the
-  ask/navigate/confirm/notify surface; full multi-pane image review is not a mobile-first
-  problem and is out of scope for the demonstrator.
-- **Realistic public data ≠ validation.** Pulling real images in raises the *visual*
-  realism but the cognition is still mock; it does not constitute clinical validation, and
-  real public images paired with fabricated findings can mislead if not clearly marked.
+- **Visualizing requirements ≠ validating them.** The Phase-1 app faithfully renders
+  *whatever the docs say* — including the unvalidated and the AI-authored. It makes the specs
+  **legible, not correct.** It is a comprehension/sign-off tool, not evidence the design or
+  any capability works. (This framing *removes* the earlier "mistaken for a clinical product"
+  risk — Phase 1 is explicitly a BA requirements tool — but it must still be labeled as a
+  **spec visualization over mock data**, not a demo of working AI.)
+- **Drift risk.** Without strict doc-to-view traceability, the visualizer can quietly become
+  the spec. Traceability (above) is the mitigation.
+- **Phase 2 is a different product with different bar.** Clinical rollout brings the
+  regulatory, validation, integration, and safety obligations that Phase 1 deliberately
+  sets aside; nothing in Phase 1 discharges them.
 
 ### Implication for reviewers
 
-Judge the demonstrator on whether it (a) exercises **every inter-component contract** with
-conformant mock components (making it a real conformance test of the architecture), and
-(b) is **unambiguously labeled** as mock-cognition. Do **not** read feature-completeness in
-the demo as capability-completeness in the system.
+Judge the Phase-1 app on **fidelity and traceability to the specs** (can a BA understand the
+real surface/requirements, and does every view map back to a document?), and on whether
+building it **exercised the inter-component contracts** (conformance signal). Do **not**
+read it as a clinical demo or as evidence the capabilities work — by design it is neither.
