@@ -9,6 +9,13 @@
 This repository is currently in an **architecture & design phase**. It contains
 design specifications and illustrative sample data — **no application code yet**.
 
+> **This is a reference *architecture*, not a fixed product.** The invariant is the set of
+> component **roles and the contracts between them**; the C1–C8 components below are **one
+> reference implementation**. An adopter should be able to replace any component — or the
+> whole set — with a completely different one and have the architecture remain the same and
+> functional, as long as the contracts are honored. See `docs/stack/design-decisions.md`
+> (ADR-0001, ADR-0002).
+
 ## The stack
 
 `ai-neuro-os` is composed of components that all share the same rules:
