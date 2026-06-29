@@ -1,0 +1,93 @@
+{
+  "_comment": "ILLUSTRATIVE sample of Reasoner (C4) producing a candidate diagnosis BEFORE histology. Not runnable, not a real patient. Ties to samples/connectome/patient-example.json (dx-001, les-001, find-mri-001, find-ct-001, find-histo-001) and samples/recall/discovery-example.json (similar cases).",
+
+  "reasoningCase": {
+    "id": "rc-001",
+    "subject": "les-001",
+    "question": "diagnose",
+    "asOf": "2026-01-03",
+    "status": "completed",
+    "_note": "Reasoned after MRI+CT, before US/histology."
+  },
+
+  "evidenceBundle": {
+    "findings": [
+      { "ref": "find-mri-001", "modality": "MRI", "kind": "ring-enhancing mass", "attributes": { "flair": "hyperintense", "enhancement": "ring", "diffusionRestriction": "rim", "edema": "moderate" } },
+      { "ref": "find-ct-001", "modality": "CT", "kind": "focal hypodense lesion", "attributes": { "density": "hypodense", "massEffect": true } }
+    ],
+    "history": { "ref": "hist-001", "summary": "3 weeks progressive headaches + right-arm weakness" },
+    "precedent": [
+      { "ref": "case-pat-417", "similarity": 0.92, "recordedDiagnosis": "high-grade glioma", "source": "Recall" },
+      { "ref": "case-pat-512", "similarity": 0.86, "recordedDiagnosis": "tumefactive demyelination", "source": "Recall", "_note": "look-alike to rule out" }
+    ],
+    "candidateCriteriaSets": ["WHO-CNS5", "McDonald-2017"]
+  },
+
+  "differential": [
+    {
+      "id": "di-glioma", "condition": "High-grade glioma", "codes": { "SNOMED": "393563007" },
+      "rank": 1, "confidence": 0.62,
+      "supporting": ["find-mri-001:ring", "find-mri-001:rim-restriction", "find-ct-001:massEffect", "case-pat-417"],
+      "refuting": [],
+      "criteriaResults": [ { "set": "WHO-CNS5", "verdict": "indeterminate", "reason": "tissue required for type/grade" } ],
+      "rationale": "Ring enhancement with rim restriction and mass effect in an older adult; precedent concordant. Grade requires tissue."
+    },
+    {
+      "id": "di-demyel", "condition": "Tumefactive demyelination", "codes": { "SNOMED": "230373001" },
+      "rank": 2, "confidence": 0.23,
+      "supporting": ["find-mri-001:ring", "case-pat-512"],
+      "refuting": ["find-mri-001:massEffect(moderate)"],
+      "criteriaResults": [ { "set": "McDonald-2017", "verdict": "not-met", "reason": "no dissemination in space/time (single lesion)" } ],
+      "rationale": "Open-ring enhancement can mimic; but McDonald not met and mass effect favors neoplasm."
+    },
+    {
+      "id": "di-abscess", "condition": "Cerebral abscess", "codes": { "SNOMED": "44132006" },
+      "rank": 3, "confidence": 0.15,
+      "supporting": ["find-mri-001:ring"],
+      "refuting": ["find-mri-001:rim-restriction(not-central)", "hist-001:no-infection-history"],
+      "criteriaResults": [],
+      "rationale": "Abscess typically shows central (not rim) diffusion restriction and an infective context; both absent."
+    }
+  ],
+
+  "nextDiscriminatingTest": {
+    "id": "dt-biopsy",
+    "test": "biopsy / histology",
+    "targets": ["di-glioma", "di-demyel", "di-abscess"],
+    "expectedInfoGain": "high",
+    "rationale": "Resolves indeterminate WHO CNS criteria and separates neoplastic vs demyelinating vs infective."
+  },
+
+  "diagnosisProposal": {
+    "id": "prop-001",
+    "subject": "les-001",
+    "top": {
+      "diagnosisId": "dx-001",
+      "condition": "High-grade glioma",
+      "status": "candidate",
+      "confidence": 0.62
+    },
+    "differential": ["di-glioma", "di-demyel", "di-abscess"],
+    "nextTest": "dt-biopsy",
+    "status": "candidate",
+    "asserted_by": "algorithm",
+    "method": "hybrid: rules+llm",
+    "timestamp": "2026-01-03",
+    "evidenceTrail": ["find-mri-001", "find-ct-001", "hist-001", "case-pat-417", "case-pat-512", "WHO-CNS5", "McDonald-2017"]
+  },
+
+  "handoff": {
+    "to": "connectome:adapter",
+    "action": "persist Diagnosis dx-001 as status=candidate, supports les-001",
+    "_note": "Human (Console) confirms before status=confirmed. Pathways (C5) plans treatment; Reasoner only recommends the next TEST."
+  },
+
+  "updateAfterHistology": {
+    "trigger": "updateOnNewEvidence(les-001) once find-histo-001 returns (grade 4)",
+    "effect": [
+      "WHO-CNS5 criteria now met → di-glioma confidence rises",
+      "find-histo-001 confirmed_by dx-001",
+      "clinician confirms dx-001 → status=confirmed (matches Connectome case)"
+    ]
+  }
+}
