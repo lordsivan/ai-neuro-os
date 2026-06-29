@@ -139,3 +139,70 @@ between components**, not the cleverness of any one component. The decisive ques
 (1) are the inter-component seams specified precisely enough that an independent team could
 build a conformant replacement, and (2) is the role decomposition itself correct. The C1–C8
 components should be treated as a worked example of the contracts — replaceable by design.
+
+---
+
+## ADR-0003 — A runnable mock demonstrator (mobile-first), data-rich, capability-showcasing
+
+**Status:** accepted (planned next deliverable) · **Scope:** the first runnable artifact
+
+### Decision
+
+Alongside the design docs, produce a **runnable mock implementation** that showcases the
+**full feature capability** end-to-end, with:
+
+- **Mock + realistic data:** high-quality hand-crafted mock data, supplemented by
+  **realistic public data pulled from the internet** (open imaging/clinical datasets).
+- **Mock components behind the real contracts:** each component (and its MCP capabilities)
+  is a **stub/mock that conforms to the same role + interface** the design specifies — so
+  the demonstrator doubles as the **first conformant reference implementation** (ADR-0002)
+  and as a way to *test that the contracts are precise enough to build against*.
+- **UI: mobile-first.** The Console (C7) surface — ask / navigate / explain / confirm /
+  notify — rendered mobile-first.
+- **UI roadmap:** mobile-first → web app → **chat-based / agentic** application. The
+  interaction surface evolves; the architecture beneath does not.
+
+### Why (the rationale)
+
+- **Makes the seams concrete.** A reference architecture's value is its contracts; a
+  runnable mock that wires mock components through those contracts is the cheapest way to
+  prove the seams are real and complete (closes the "narrative contracts" gap in ADR-0002
+  without waiting for real ML/clinical components).
+- **Showcases capability without owning it.** It demonstrates the *experience and the
+  flow* (cross-modal navigation, candidate→confirmed, discovery, monitoring) using mock
+  cognition, so stakeholders can see the whole loop before any heavyweight component exists.
+- **Mobile-first matches the Console surface.** The clinician interactions Console owns
+  (natural-language ask, navigate, confirm a candidate, get notified) are a good fit for
+  mobile; the heavyweight image-reading is delegated, not reimplemented in the demo.
+
+### Consequences
+
+- The demonstrator should **reuse the existing worked-case IDs** (`pat-001`, `les-001`,
+  `dx-001`, `tx-001`, `prog-001/002`, cohort `pat-417/512`) so docs and demo stay aligned.
+- Public data must carry **dataset provenance** ("public dataset, not a real patient") and
+  respect dataset **licenses/usage terms**; the mock's `asserted_by`/provenance fields make
+  this natural to record.
+- Building the mock will surface under-specified contracts — that feedback should flow
+  **back into the component specs** (the demo is also a spec test).
+
+### What this ADR does **not** settle (honest limits — read before demoing)
+
+- **A mock that showcases "full capability" is not evidence the capability works.** Like the
+  worked case, a polished demo with **pre-baked findings/diagnoses/confidences** proves the
+  *representation, flow, and UX* — not that any model is accurate. It must be **labeled as a
+  capability/UX showcase with mock cognition**, or it will manufacture false confidence in
+  stakeholders. The dangerous failure mode is a convincing mobile demo being mistaken for a
+  working clinical product.
+- **Mobile-first ≠ diagnostic image reading.** The mock UI should scope to the
+  ask/navigate/confirm/notify surface; full multi-pane image review is not a mobile-first
+  problem and is out of scope for the demonstrator.
+- **Realistic public data ≠ validation.** Pulling real images in raises the *visual*
+  realism but the cognition is still mock; it does not constitute clinical validation, and
+  real public images paired with fabricated findings can mislead if not clearly marked.
+
+### Implication for reviewers
+
+Judge the demonstrator on whether it (a) exercises **every inter-component contract** with
+conformant mock components (making it a real conformance test of the architecture), and
+(b) is **unambiguously labeled** as mock-cognition. Do **not** read feature-completeness in
+the demo as capability-completeness in the system.
