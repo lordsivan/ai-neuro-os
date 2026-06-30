@@ -1,8 +1,8 @@
 # contracts/ — the versioned seam between design and implementation
 
 **Design-owned** (lives in the design SoT / repo root). This is the **machine-checkable
-formalization of the design's seams** — the artifact the implementation (`../app/`, future
-`ai-neuro-ba-app`) **pins by version** and **proves conformance to** in CI (ADR-0002,
+formalization of the design's seams** — the artifact the implementation
+(`ai-neuro-ba-app`) **pins by version** and **proves conformance to** in CI (ADR-0002,
 ADR-0003). It turns the prose specs into something an independent team can build against.
 
 > **Status: v0.0.1 — draft starter.** Only a fragment of the domain model is formalized so

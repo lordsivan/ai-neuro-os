@@ -189,11 +189,11 @@ layering-respecting replica of the design it pins.
    between the repos, and the impl repo never writes back into the design repo (change flows
    as issues/PRs against the design — rule 6).
 
-   **Interim arrangement (until git split is possible):** both sides currently live in **one
-   branch, separated by top-level folder** — design at the repo root (incl. `contracts/`),
-   implementation under **`app/`**. The folder boundary is treated as the repo boundary
-   (`app/ → contracts/` by version only; nothing at root depends on `app/`). See
-   `REPO-LAYOUT.md` for the folder→repo mapping and the mechanical split.
+   **Repo split (done):** design and implementation now live in **separate repos** —
+   design in this repo (`ai-neuro-os`, incl. `contracts/`), implementation in
+   **`ai-neuro-ba-app`** (its Phase-1 mobile requirement is in that repo's `requirements/`
+   folder). The coupling is `ai-neuro-ba-app → contracts/` by version only; nothing in this
+   design repo depends on the implementation. See `REPO-LAYOUT.md` for the repo mapping.
 2. **Formalize the seams (this is what makes "100% replica" checkable).** Extract from the
    design, into the design branch, machine-checkable contracts: each component's **L6 public
    API** (OpenAPI/JSON-Schema/protobuf/types), the **domain model** (entities, edges,
